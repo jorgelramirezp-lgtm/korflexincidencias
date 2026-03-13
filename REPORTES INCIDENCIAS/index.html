@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KORFLEX - Analisis de Calidad</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<style>
+:root {
+  --primary: #1B3A5C; --primary-light: #2E5D8C; --danger: #DC3545;
+  --warning: #F0AD4E; --success: #28A745; --info: #17A2B8;
+  --bg: #F4F6F9; --card: #FFFFFF; --text: #2C3E50;
+  --muted: #8898AA; --border: #E3E8EE; --accent: #6F42C1;
+  --bien: #17A2B8;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); font-size:14px; }
+
+/* Header - responsive */
+.header {
+  background:linear-gradient(135deg, var(--primary) 0%, #0D2137 100%);
+  color:white; padding:12px 16px;
+  display:flex; justify-content:space-between; align-items:center;
+  box-shadow:0 2px 12px rgba(0,0,0,0.2); flex-wrap:wrap; gap:8px;
+}
+.header h1 { font-size:16px; font-weight:700; }
+.header .logo { display:flex; align-items:center; gap:8px; }
+.header .badge { background:var(--success); font-size:10px; padding:3px 8px; border-radius:10px; font-weight:600; }
+.header .right { font-size:11px; opacity:0.7; text-align:right; }
+
+/* Nav - scrollable on mobile */
+.nav {
+  display:flex; gap:2px; background:var(--card); padding:4px 8px;
+  border-bottom:2px solid var(--border); overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.nav::-webkit-scrollbar { height:3px; }
+.nav::-webkit-scrollbar-thumb { background:var(--primary); border-radius:2px; }
+.nav button {
+  padding:8px 12px; border:none; background:transparent;
+  cursor:pointer; font-size:12px; color:var(--muted);
+  border-radius:8px; transition:all 0.2s; font-weight:600;
+  white-space:nowrap; flex-shrink:0;
+}
+.nav button:hover { background:var(--bg); color:var(--text); }
+.nav button.active { background:var(--primary); color:white; }
+
+/* Content */
+.content { padding:12px; max-width:1400px; margin:0 auto; }
+.tab { display:none; } .tab.active { display:block; }
+
+/* KPIs - responsive grid */
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:10px; margin-bottom:16px; }
+.kpi { background:var(--card); border-radius:10px; padding:14px; box-shadow:0 2px 8px rgba(0,0,0,0.06); border-left:4px solid var(--primary); }
+.kpi .label { font-size:10px; text-transform:uppercase; color:var(--muted); font-weight:600; letter-spacing:0.5px; }
+.kpi .value { font-size:22px; font-weight:700; color:var(--primary); margin:4px 0; }
+.kpi .sub { font-size:11px; color:var(--muted); }
+.kpi.danger { border-left-color:var(--danger); }
+.kpi.warning { border-left-color:var(--warning); }
+.kpi.success { border-left-color:var(--success); }
+.kpi.info { border-left-color:var(--info); }
+.kpi.bien { border-left-color:var(--bien); }
+
+.card { background:var(--card); border-radius:10px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:16px; }
+.card h3 { font-size:14px; margin-bottom:12px; color:var(--primary); }
+
+/* Legend */
+.legend-box { background:#F8F9FC; border:1px solid var(--border); border-radius:8px; margin-bottom:12px; font-size:12px; color:#555; }
+.legend-box summary { padding:8px 12px; cursor:pointer; font-weight:600; color:var(--primary); list-style:none; }
+.legend-box summary::before { content:'Info '; }
+.legend-box .legend-content { padding:8px 12px; border-top:1px solid var(--border); line-height:1.6; }
+
+/* Charts */
+.chart-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+.chart-container { position:relative; height:280px; }
+
+/* Tables */
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th { background:var(--primary); color:white; padding:8px 10px; text-align:left; font-weight:600; position:sticky; top:0; font-size:11px; }
+td { padding:6px 10px; border-bottom:1px solid var(--border); }
+tr:hover { background:#F0F4FF; }
+tr:nth-child(even) { background:#FAFBFC; }
+
+/* Tags */
+.tag { padding:2px 8px; border-radius:10px; font-size:10px; font-weight:600; display:inline-block; }
+.tag-danger { background:#FDE8EA; color:var(--danger); }
+.tag-warning { background:#FFF8E1; color:#856404; }
+.tag-success { background:#D4EDDA; color:#155724; }
+.tag-info { background:#D1ECF1; color:#0C5460; }
+.tag-accent { background:#F0E6FF; color:var(--accent); }
+.tag-bien { background:#D1ECF1; color:#0C5460; }
+
+/* Alerts */
+.alert { padding:12px 14px; border-radius:8px; margin-bottom:10px; display:flex; gap:10px; align-items:flex-start; font-size:13px; }
+.alert.alert-danger { background:#FDE8EA; border-left:4px solid var(--danger); }
+.alert.alert-warning { background:#FFF8E1; border-left:4px solid var(--warning); }
+.alert.alert-info { background:#D1ECF1; border-left:4px solid var(--info); }
+.alert .alert-text strong { display:block; margin-bottom:2px; }
+.alert .alert-text span { font-size:11px; color:#666; }
+
+/* Filters */
+.filters { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }
+.filters select, .filters input { padding:6px 10px; border:1px solid var(--border); border-radius:8px; font-size:12px; }
+.btn { padding:7px 14px; border:none; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600; transition:all 0.2s; }
+.btn-primary { background:var(--primary); color:white; }
+.btn-success { background:var(--success); color:white; }
+.btn-danger { background:var(--danger); color:white; }
+.btn-outline { background:transparent; border:2px solid var(--primary); color:var(--primary); }
+.btn-pdf { background:#E74C3C; color:white; }
+
+.table-wrap { max-height:500px; overflow:auto; border-radius:8px; border:1px solid var(--border); }
+
+/* Import */
+.drop-zone { border:3px dashed var(--border); border-radius:12px; padding:30px; text-align:center; cursor:pointer; }
+.drop-zone:hover, .drop-zone.dragover { border-color:var(--primary); background:#F0F4FF; }
+
+/* ==== MOBILE ==== */
+@media (max-width:768px) {
+  .header h1 { font-size:14px; }
+  .chart-row { grid-template-columns:1fr; }
+  .kpi-grid { grid-template-columns:repeat(2, 1fr); }
+  .kpi .value { font-size:18px; }
+  .content { padding:8px; }
+  .card { padding:12px; }
+  .filters { flex-direction:column; }
+  .filters select, .filters input { width:100%; }
+  table { font-size:11px; }
+  th, td { padding:5px 6px; }
+}
+
+/* ==== PRINT ==== */
+@media print {
+  * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  body { background:white; font-size:10px; }
+  .header { padding:8px 12px; }
+  .header h1 { font-size:14px; }
+  .nav, .filters, .btn, #tab-import, #tab-config, .no-print, .data-range-bar { display:none !important; }
+  .tab { display:block !important; page-break-inside:avoid; margin-bottom:16px; }
+  .tab h2 { font-size:14px; border-bottom:2px solid var(--primary); padding-bottom:4px; margin-bottom:10px; }
+  .chart-row { grid-template-columns:1fr 1fr; }
+  .card { box-shadow:none; border:1px solid #ddd; page-break-inside:avoid; padding:10px; }
+  .kpi { box-shadow:none; border:1px solid #ddd; padding:10px; }
+  .kpi .value { font-size:18px; }
+  .legend-box { break-inside:avoid; }
+  .legend-box .legend-content { display:block !important; }
+  .alert { break-inside:avoid; }
+  canvas { max-height:220px !important; }
+  .chart-container { height:220px !important; }
+  .print-header { display:block !important; text-align:center; margin-bottom:16px; border-bottom:2px solid var(--primary); padding-bottom:8px; }
+  .print-data-table { display:block !important; }
+  .print-data-table table { margin-top:6px; }
+  .print-data-table h4 { font-size:11px; color:var(--primary); margin-bottom:4px; }
+}
+.print-header { display:none; }
+.print-data-table { display:none; }
+
+/* Data range info bar */
+.data-range-bar {
+  background:linear-gradient(90deg, #E8F4FD 0%, #D1ECF1 50%, #E8F4FD 100%);
+  padding:6px 16px; text-align:center; font-size:12px; color:#0C5460;
+  font-weight:600; border-bottom:1px solid #BEE5EB;
+  display:flex; justify-content:center; align-items:center; gap:12px; flex-wrap:wrap;
+}
+.data-range-bar .range-icon { font-size:14px; }
+.data-range-bar .range-dates { background:white; padding:2px 10px; border-radius:12px; font-weight:700; color:var(--primary); }
+.data-range-bar .range-total { opacity:0.8; font-weight:500; }
+
+/* Import guide steps */
+.import-steps { counter-reset:step; }
+.import-step {
+  position:relative; padding:14px 14px 14px 52px; margin:8px 0;
+  background:white; border-radius:10px; border:1px solid var(--border);
+  font-size:13px; line-height:1.5;
+}
+.import-step::before {
+  counter-increment:step;
+  content:counter(step);
+  position:absolute; left:12px; top:12px;
+  width:28px; height:28px; border-radius:50%;
+  background:var(--primary); color:white;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:700; font-size:14px;
+}
+.import-step strong { color:var(--primary); }
+.import-step code {
+  background:#F0F4FF; padding:1px 6px; border-radius:4px;
+  font-size:11px; color:var(--primary); font-weight:600;
+}
+.import-history { margin-top:12px; }
+.import-history .entry {
+  display:flex; gap:10px; align-items:center; padding:6px 10px;
+  border-bottom:1px solid var(--border); font-size:12px;
+}
+.import-history .entry .date { color:var(--muted); min-width:90px; }
+.import-history .entry .count { font-weight:700; color:var(--success); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <h1>KORFLEX - Control de Calidad</h1>
+    <span class="badge">v7.0</span>
+  </div>
+  <div class="right">
+    <div>Sistema de Analisis de Incidencias</div>
+    <div id="dataInfo">Cargando...</div>
+  </div>
+</div>
+
+<!-- Data range info bar -->
+<div id="dataRangeBar" class="data-range-bar no-print">
+  <span id="dataRangeText">Calculando rango de datos...</span>
+</div>
+
+<div class="nav no-print">
+  <button class="active" onclick="showTab('dashboard')">Dashboard</button>
+  <button onclick="showTab('bien')">BIEN (Sin Defecto)</button>
+  <button onclick="showTab('listado')">Listado</button>
+  <button onclick="showTab('producto')">Por Producto</button>
+  <button onclick="showTab('problema')">Por Problema</button>
+  <button onclick="showTab('cruce')">Cruce</button>
+  <button onclick="showTab('comparar')">Comparar</button>
+  <button onclick="showTab('import')">Importar</button>
+  <button onclick="showTab('config')">Config</button>
+  <button class="btn-pdf" onclick="exportPDF()">PDF</button>
+</div>
+
+<div class="print-header">
+  <h2>KORFLEX - Informe de Calidad</h2>
+  <p id="printDateRange">Periodo: -</p>
+  <p>Generado: <script>document.write(new Date().toLocaleDateString('es-ES'))</script></p>
+</div>
+
+<div class="content">
+
+<!-- FILTERS -->
+<div class="filters no-print">
+  <select id="filterPeriod" onchange="applyFilters()">
+    <option value="all">Todo el periodo</option>
+    <option value="today">Hoy</option>
+    <option value="7d">Ultimos 7 dias</option>
+    <option value="30d">Ultimos 30 dias</option>
+    <option value="month">Este mes</option>
+    <option value="lastmonth">Mes anterior</option>
+    <option value="custom">Personalizado</option>
+  </select>
+  <input type="date" id="filterFrom" style="display:none" onchange="applyFilters()">
+  <input type="date" id="filterTo" style="display:none" onchange="applyFilters()">
+  <select id="filterOrigen" onchange="applyFilters()"><option value="">Todos los productos</option></select>
+  <span id="filterCount" style="font-size:11px;color:var(--muted)"></span>
+  <span id="filterDateRange" style="font-size:11px;color:var(--primary);font-weight:600;margin-left:auto"></span>
+</div>
+
+<!-- ==================== DASHBOARD ==================== -->
+<div id="tab-dashboard" class="tab active">
+  <h2 style="display:none">Dashboard Ejecutivo</h2>
+  <details class="legend-box" open>
+    <summary>Leyenda del Dashboard</summary>
+    <div class="legend-content">
+      <strong>KPIs:</strong> Total incidencias, defectos reales (sin BIEN), devoluciones sin defecto (BIEN), costes desglosados.<br>
+      <strong>BIEN = Sin defecto real.</strong> El producto se reporto como incidencia pero estaba en buen estado o el cliente no lo quiere. Genera coste improductivo (logistica, inspeccion).<br>
+      <strong>Valor:</strong> Permite separar problemas de calidad (fabricacion) de problemas comerciales (devoluciones sin defecto).
+    </div>
+  </details>
+  <div id="kpiArea"></div>
+  <div id="alertArea" style="margin:16px 0"></div>
+  <div class="chart-row">
+    <div class="card">
+      <h3>Incidencias por Producto</h3>
+      <div class="chart-container"><canvas id="chartOrigen"></canvas></div>
+      <div id="ptOrigen" class="print-data-table"></div>
+    </div>
+    <div class="card">
+      <h3>Defecto Real vs Sin Defecto (BIEN)</h3>
+      <div class="chart-container"><canvas id="chartBienSplit"></canvas></div>
+      <div id="ptBienSplit" class="print-data-table"></div>
+    </div>
+  </div>
+  <div class="chart-row">
+    <div class="card">
+      <h3>Top 10 Problemas (solo defectos reales)</h3>
+      <div class="chart-container"><canvas id="chartClase"></canvas></div>
+      <div id="ptClase" class="print-data-table"></div>
+    </div>
+    <div class="card">
+      <h3>Tendencia Mensual</h3>
+      <div class="chart-container"><canvas id="chartTrend"></canvas></div>
+      <div id="ptTrend" class="print-data-table"></div>
+    </div>
+  </div>
+  <div class="chart-row">
+    <div class="card">
+      <h3>Top 5 Clientes</h3>
+      <div class="chart-container"><canvas id="chartClientes"></canvas></div>
+      <div id="ptClientes" class="print-data-table"></div>
+    </div>
+    <div class="card">
+      <h3>Coste: Defectos vs BIEN por Producto</h3>
+      <div class="chart-container"><canvas id="chartCostSplit"></canvas></div>
+      <div id="ptCostSplit" class="print-data-table"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== BIEN (Sin Defecto) ==================== -->
+<div id="tab-bien" class="tab">
+  <h2 style="display:none">Analisis de Devoluciones Sin Defecto (BIEN)</h2>
+  <details class="legend-box" open>
+    <summary>Leyenda - Devoluciones BIEN</summary>
+    <div class="legend-content">
+      <strong>Que son:</strong> Incidencias donde el producto estaba en buen estado. El cliente no lo quiere o fue un falso reporte.<br>
+      <strong>Por que importa:</strong> Generan coste improductivo (transporte, inspeccion, logistica inversa) SIN que haya un problema de fabricacion.<br>
+      <strong>Acciones diferentes:</strong> Para defectos reales hay que mejorar produccion. Para BIEN hay que mejorar comunicacion comercial, expectativas del cliente, o proceso de venta.<br>
+      <strong>Valor:</strong> Identificar que clientes y productos tienen mas devoluciones sin defecto para reducir costes improductivos.
+    </div>
+  </details>
+  <div id="bienContent"></div>
+</div>
+
+<!-- ==================== LISTADO ==================== -->
+<div id="tab-listado" class="tab">
+  <h2 style="display:none">Listado de Incidencias</h2>
+  <details class="legend-box">
+    <summary>Leyenda del Listado</summary>
+    <div class="legend-content">
+      <strong>BIEN (verde)</strong> = sin defecto real. Las demas = defecto real.<br>
+      <strong>Uso:</strong> Buscar, filtrar y exportar incidencias.
+    </div>
+  </details>
+  <div class="filters no-print">
+    <input type="text" id="searchBox" placeholder="Buscar referencia, cliente, problema..." onkeyup="renderList()" style="flex:1;min-width:200px;">
+    <button class="btn btn-outline" onclick="exportCSV()">Exportar CSV</button>
+  </div>
+  <div class="table-wrap" id="listTable"></div>
+</div>
+
+<!-- ==================== POR PRODUCTO ==================== -->
+<div id="tab-producto" class="tab">
+  <h2 style="display:none">Analisis por Producto</h2>
+  <details class="legend-box" open>
+    <summary>Leyenda - Producto</summary>
+    <div class="legend-content">
+      <strong>Tabla:</strong> Cada producto con total, defectos reales, BIEN, % y coste.<br>
+      <strong>Desglose:</strong> Problemas especificos de cada producto.
+    </div>
+  </details>
+  <div id="productoContent"></div>
+</div>
+
+<!-- ==================== POR PROBLEMA ==================== -->
+<div id="tab-problema" class="tab">
+  <h2 style="display:none">Analisis por Problema (Pareto)</h2>
+  <details class="legend-box" open>
+    <summary>Leyenda - Pareto</summary>
+    <div class="legend-content">
+      <strong>Solo defectos reales</strong> (excluye BIEN). Ranking descendente con % acumulado.<br>
+      <strong>Zona Vital (80%):</strong> problemas que, al resolverse, eliminan el 80% de defectos.
+    </div>
+  </details>
+  <div id="problemaContent"></div>
+</div>
+
+<!-- ==================== CRUCE ==================== -->
+<div id="tab-cruce" class="tab">
+  <h2 style="display:none">Cruce Producto x Problema</h2>
+  <details class="legend-box" open>
+    <summary>Leyenda - Cruce</summary>
+    <div class="legend-content">
+      Cada producto con sus problemas especificos. Colores mas intensos = mas incidencias.<br>
+      BIEN aparece en verde, defectos en rojo.
+    </div>
+  </details>
+  <div id="cruceContent"></div>
+</div>
+
+<!-- ==================== COMPARAR ==================== -->
+<div id="tab-comparar" class="tab">
+  <h2 style="display:none">Comparacion de Periodos</h2>
+  <div class="filters no-print">
+    <label><strong>Periodo A:</strong></label>
+    <input type="date" id="compFromA"> - <input type="date" id="compToA">
+    <label style="margin-left:12px"><strong>Periodo B:</strong></label>
+    <input type="date" id="compFromB"> - <input type="date" id="compToB">
+    <button class="btn btn-primary" onclick="runCompare()">Comparar</button>
+  </div>
+  <div id="compareResult"></div>
+</div>
+
+<!-- ==================== IMPORTAR ==================== -->
+<div id="tab-import" class="tab no-print">
+  <div class="card">
+    <h3>Como cargar nuevos datos desde SIMGEST</h3>
+    <div class="import-steps">
+      <div class="import-step">
+        <strong>Abrir SIMGEST</strong> y acceder al modulo de incidencias / devoluciones.
+      </div>
+      <div class="import-step">
+        <strong>Filtrar las fechas</strong> que quieras exportar. Puedes exportar todo o solo un rango de fechas nuevo.
+      </div>
+      <div class="import-step">
+        <strong>Exportar como Excel (.xls)</strong>. En SIMGEST pulsa el boton de exportar o el icono de Excel. El archivo se descargara como <code>.xls</code> (formato TSV).
+      </div>
+      <div class="import-step">
+        <strong>Arrastra el archivo aqui abajo</strong> o haz clic en la zona de carga. El sistema detecta automaticamente la codificacion, los separadores y las columnas.
+      </div>
+      <div class="import-step">
+        <strong>Revisa la previsualizacion</strong> y pulsa "Importar" para confirmar. Solo se importan registros nuevos (no se duplican los existentes).
+      </div>
+    </div>
+    <div class="alert alert-info" style="margin-top:12px">
+      <div class="alert-text">
+        <strong>Los datos NO se pierden al cerrar el navegador</strong>
+        <span>Se guardan en localStorage. Si cambias de navegador o borras datos del navegador, tendras que volver a importar.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Cargar Archivo</h3>
+    <div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()"
+         ondragover="event.preventDefault();this.classList.add('dragover')"
+         ondragleave="this.classList.remove('dragover')"
+         ondrop="event.preventDefault();this.classList.remove('dragover');handleFile(event.dataTransfer.files[0])">
+      <div style="font-size:36px;margin-bottom:8px">+</div>
+      <div><strong>Arrastra el archivo .xls de SIMGEST aqui</strong></div>
+      <div style="color:var(--muted);margin-top:4px">o haz clic para seleccionar</div>
+      <div style="color:var(--muted);margin-top:8px;font-size:11px">Formatos: .xls .xlsx .csv .tsv</div>
+      <input type="file" id="fileInput" accept=".xls,.xlsx,.csv,.tsv" style="display:none" onchange="handleFile(this.files[0])">
+    </div>
+    <div id="importPreview"></div>
+  </div>
+
+  <div class="card">
+    <h3>Historial de Datos Cargados</h3>
+    <div id="importHistory"></div>
+  </div>
+</div>
+
+<!-- ==================== CONFIG ==================== -->
+<div id="tab-config" class="tab no-print">
+  <div class="card">
+    <h3>Configuracion de Codigos</h3>
+    <div id="configArea"></div>
+    <div style="margin-top:12px">
+      <button class="btn btn-danger" onclick="if(confirm('Resetear todo?')){localStorage.clear();location.reload();}">Resetear</button>
+      <button class="btn btn-primary" style="margin-left:8px" onclick="exportConfig()">Exportar config</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script>
+// ============================================================
+// DATA LAYER
+// ============================================================
+const STORAGE_KEY = 'korflex_incidents';
+const CONFIG_KEY = 'korflex_config';
+
+const DEFAULT_ORIGEN = {
+  1:'COLCHON', 2:'COMPLEMENTOS', 3:'HERRAJES', 4:'BASE TAPIZADA', 5:'BISAGRAS',
+  6:'PISTONES', 7:'CANAPE', 8:'TAPA CANAPE TAPIZADA', 9:'BOLSA ALMOHADA',
+  10:'FUNDA ALMOHADA', 11:'TOOPER', 12:'SUELO CANAPE', 13:'SOMIER',
+  14:'PATAS BASE', 15:'CAMA ARTICULADA', 16:'TACOS CAMA/SOMIER',
+  17:'MANDO CAMA ART.', 18:'MOTOR CAMA ART.', 19:'SUJETA COLCHON',
+  20:'BOLSA COLCHON', 21:'CARCASA MUELLE BONELL COLCHON', 22:'MUELLE ENSACADO COLCHON',
+  23:'NUCLEO AQUAPUR COLCHON', 24:'NUCLEO AQUAPUR PERFILADO COCHON',
+  25:'NUCLEO LATEX COLCHON', 26:'SISTEMA NUCOL COLCHON', 27:'SISTEMA NEWIN COLCHON',
+  28:'NUCLEO VISCO PERFILADA COLCHON', 29:'FUNDA COLCHON', 30:'CREMALLERA COLCHON',
+  31:'TAPA MALLA COLCHON', 32:'TAPA VISCO 1 CM. COLCHON', 33:'TAPA VISCO 2 CM. COLCHON',
+  34:'PATA', 35:'ESTRUCTURA SOMIER', 36:'LAMAS SOMIER', 37:'SOPORTE PATAS SOMIER',
+  38:'ABATIBLE', 39:'ACOLCHADO BASE', 40:'RECOGIDA EXPOSICIONES',
+  41:'ERROR COMERCIAL', 42:'ERROR CLIENTES', 43:'BANDA COLCHON', 44:'COLCHON',
+  45:'ALMOHADA', 47:'ERROR ADMINISTRACION', 49:'ERROR TRANSPORTES', 50:'PROTECTOR',
+  51:'LARGUERO ABATIBLE', 52:'KANGURO SOMIER', 53:'CABEZAL', 54:'COLCHON', 55:'LITERA'
+};
+
+const SUBORIGEN = {
+  1:{1:'HUNDIDO',2:'ERROR ALTURA',3:'MEDIDA ERRONEA',4:'REPETIDO',5:'ROTO',6:'SUCIO',7:'QUIERE MARCA BLANCA',8:'NO SERVIDO',9:'BIEN',10:'MOJADO',11:'ERROR OFICINA',12:'NO RECUPERA',13:'ERROR CLIENTE',14:'MAL MONTADO',15:'MUCHO TIEMPO ESPERA YA NO LO QUIERE',16:'DESCOSIDO',17:'DURO',18:'BLANDO',19:'PARA ENROLLAR',20:'PARA ABRIR'},
+  2:{1:'BARANDILLAS CAMA ARTICULADA',2:'PEDIDO DUPLICADO POR EL CLIENTE',3:'FALTAN PIEZAS',8:'ENVIADO ERRONEAMENTE',9:'DAÑADO'},
+  3:{7:'ERROR CLIENTE',8:'HACEN RUIDO',9:'NO CIERRA'},
+  4:{1:'GOLPEADA',14:'FALTAN ROSCAS',15:'ERROR MEDIDA'},
+  5:{0:'POCA PRESION',1:'ROTA',2:'BIEN',3:'RUIDO',4:'ERROR PROVEEDOR'},
+  6:{0:'POCA PRESION',1:'ROTO',2:'BIEN',3:'RUIDO',4:'ERROR PROVEEDOR',5:'MUCHA POTENCIA'},
+  7:{0:'ROTA POLIPIEL',1:'ROTO CAJON',2:'BIEN',4:'ROZADO CAJON ABATIBLE',5:'ERROR PROVEEDOR',6:'ERROR MEDIDA',7:'MAL MECANIZADO'},
+  8:{0:'ROTO TNT',1:'ROTA TAPA',2:'BIEN',3:'RUIDO TAPA',4:'ROZADA TAPA',5:'ERROR PROVEEDOR',6:'ERROR MEDIDA',7:'QUEDA LEVANTADA',8:'ARQUEADA',9:'SUCIA'},
+  9:{0:'ROTA',1:'ROTA CREMALLERA',2:'BIEN',3:'SUCIA'},
+  10:{0:'ROTA',1:'SUCIA',2:'BIEN',3:'ROTA CREMALLERA'},
+  11:{0:'BLANDO',1:'ROTO',2:'SUCIO',3:'BIEN',4:'NO HACE MEDIDA'},
+  12:{0:'DOBLADA',1:'ROSCAS DEFECTUOSAS',2:'ROZADA',3:'RUIDO',5:'BIEN',6:'SUCIA',7:'ERROR EN MEDIDA',8:'ERROR MEDIDAS ENTRE PLETINAS',9:'MAL SOLDADO',10:'MOJADO',11:'ROTO'},
+  13:{0:'DOBLADO',1:'ROTO',2:'BIEN',3:'RUIDO',4:'ROSCAS DEFECTUOSAS',5:'REPETIDO',6:'MAL SOLDADO'},
+  14:{0:'ROTO',1:'DOBLADA',2:'BIEN'},
+  15:{0:'DEFECTUOSA',1:'OXIDADA',2:'ROTA',3:'BIEN',4:'MAL SOLDADA'},
+  16:{0:'ROTO',1:'BIEN'},
+  17:{0:'BIEN',1:'ROTO'},
+  18:{0:'ROTO',1:'BIEN'},
+  19:{0:'ROTO',1:'FALTAN TACOS SUJETA COLCHON',2:'BIEN',3:'FALTA SUJETA COLCHON'},
+  20:{0:'ROTA',1:'BIEN'},
+  21:{0:'DEFORMADA',1:'ROTA',2:'BIEN'},
+  22:{0:'DEFORMADO',1:'ROTO',2:'BIEN'},
+  23:{1:'DEFORMADO',2:'HUNDIDO',3:'ROTO',4:'BIEN',5:'SUCIO',6:'OXIDADO',7:'BLANDO',8:'MANCHAS MOHO',9:'SIN FIRMEZA'},
+  24:{0:'BLANDO',1:'DEFORMADO',2:'HUNDIDO',3:'BIEN',4:'ROTO',5:'SUCIO',6:'OXIDACION',7:'MANCHAS MOHO',8:'SIN FIRMEZA'},
+  25:{0:'BLANDO',1:'DEFORMADO',2:'HUNDIDO',3:'ROTO',4:'BIEN',5:'SUCIO',6:'OXIDACION',7:'MANCHAS MOHO'},
+  26:{0:'ROTO',1:'BIEN',2:'IMPERFECCIONES'},
+  27:{0:'ROTO',1:'BIEN',2:'IMPERFECCIONES'},
+  28:{0:'BLANDO',1:'DEFORMADO',2:'HUNDIDO',3:'SUCIO',4:'OXIDADO',5:'MANCHAS MOHO',6:'ROTO',7:'BIEN'},
+  29:{0:'DESCOSIDA',1:'ROTA',2:'CREMALLERA ROTA',3:'BIEN',4:'SUCIA',5:'OXIDADA',6:'MANCHAS MOHO',7:'ERROR EN CARGA'},
+  30:{0:'ROTA',1:'MAL COSIDA',2:'BIEN'},
+  31:{0:'BLANDA',1:'HUNDIDA',2:'DEFORMADA',3:'SUCIA',4:'OXIDADA',5:'MANCHAS MOHO',6:'ROTA',7:'DESCOSIDA',8:'BIEN',9:'QUEMADA',10:'DESPEGADA'},
+  32:{0:'BLANDA',1:'DEFORMADA',2:'HUNDIDA',3:'SUCIA',4:'OXIDADA',5:'MANCHAS MOHO',6:'ROTA',7:'BIEN',8:'DESCOSIDA',9:'QUEMADA',10:'DESPEGADA'},
+  33:{0:'BLANDA',1:'DEFORMADA',2:'HUNDIDA',3:'DESCOSIDA',4:'SUCIA',5:'OXIDADA',6:'MANCHAS MOHO',7:'ROTA',8:'BIEN',9:'QUEMADA',10:'DESPEGADA'},
+  34:{0:'ROTA',1:'TORCIDA',2:'BIEN'},
+  35:{0:'MAL SOLDADA',1:'ROTA',2:'RALLADA',3:'BIEN',4:'DOBLADO'},
+  36:{0:'ROTA',1:'BIEN',2:'ROZADA',3:'ROZADAS LAMAS'},
+  37:{0:'MAL SOLDADO',1:'ROTO',2:'RALLADO',3:'BIEN'},
+  38:{0:'ROTO',1:'ROZADO',2:'BIEN',3:'ERROR EN MODELO',4:'RUIDO',5:'ERROR DE MEDIDA'},
+  39:{0:'ROTO TNT',1:'ROTO',2:'BIEN',3:'ROZADO'},
+  40:{0:'DEVOLUCION SOLICITADA CLIENTE',1:'DECISION COMERCIAL',2:'CAMBIO DE MODELOS',3:'DECISION ADMINISTRATIVA'},
+  41:{0:'ERROR DESCUENTO PEDIDO',1:'ERROR AL PASAR EL PEDIDO',2:'PEDIDOS DUPLICADOS'},
+  42:{0:'ERROR SOLICITUD DE PEDIDO',1:'MAL USO DEL PRODUCTO',2:'RECHAZA ENTREGA'},
+  43:{0:'SUCIO',1:'ROTA',2:'OXIDADA',3:'MANCHAS MOHO',4:'QUEMADA',5:'DESCOSIDA',6:'BIEN'},
+  44:{0:'ERROR MEDIDA',1:'ROTO',2:'SUCIO',3:'MEDIDA',4:'MANCHAS MOHO',5:'QUEMADO',6:'HUNDIDO',7:'BLANDO',8:'DEFORMADO',9:'DESCOSIDO',10:'SIN FIRMEZA',11:'BIEN',12:'ERROR MODELO',13:'DESPEGADO',14:'DURO',15:'COLCHON SUSTITUCION',16:'CREMALLERA ROTA'},
+  45:{0:'ROTA',1:'ERROR MEDIDA',2:'BIEN',3:'ERROR PROVEEDOR',4:'ERROR MODELO',5:'HUMEDAD',6:'SUCIA'},
+  47:{0:'ERROR AL PASAR EL PEDIDO'},
+  49:{0:'SERVICIO FUERA DE PLAZO',1:'MERCANCIA DAÑADA',2:'MERCANCIA NO ENTREGADA',3:'ENTREGA ERROR DE DIRECCION'},
+  50:{0:'ERROR EN CARGA',1:'SUCIO',2:'ROTO',3:'ERROR DE MEDIDA'},
+  51:{0:'ROTO'},
+  52:{0:'MAL DE MEDIDA',1:'ROTO'},
+  53:{0:'ROTO',1:'SUCIO',2:'MAL DE MEDIDA',3:'ERROR EN MODELO'},
+  55:{0:'ERROR MEDIDA'}
+};
+
+const CC = ['#1B3A5C','#DC3545','#F0AD4E','#28A745','#17A2B8','#6F42C1','#E83E8C','#FD7E14','#20C997','#6610F2','#007BFF','#795548','#FF6B6B','#4ECDC4','#45B7D1','#96CEB4'];
+
+let allData = [], filteredData = [], pendingImport = [];
+let currentSort = { key:'fecha', dir:'desc' };
+let charts = {}, config = {};
+
+function loadConfig() {
+  try { const s = localStorage.getItem(CONFIG_KEY); config = s ? JSON.parse(s) : {}; } catch(e) { config = {}; }
+  if (!config._v || config._v < 7) { config.origen = {...DEFAULT_ORIGEN}; config._v = 7; }
+  Object.keys(DEFAULT_ORIGEN).forEach(k => { if (!config.origen[k]) config.origen[k] = DEFAULT_ORIGEN[k]; });
+  saveConfig();
+}
+function saveConfig() { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); }
+function getOrigenLabel(code) { return config.origen[code] || DEFAULT_ORIGEN[code] || 'ORIGEN_'+code; }
+function getClaseLabel(origen, clase) {
+  if (SUBORIGEN[origen] && SUBORIGEN[origen][clase] !== undefined) return SUBORIGEN[origen][clase];
+  return 'TIPO_'+clase;
+}
+function getFullLabel(origen, clase) { return getOrigenLabel(origen) + ' > ' + getClaseLabel(origen, clase); }
+function isBien(origen, clase) { return getClaseLabel(origen, clase) === 'BIEN'; }
+
+function loadData() {
+  try { const s = localStorage.getItem(STORAGE_KEY); allData = s ? JSON.parse(s) : []; } catch(e) { allData = []; }
+  if (allData.length === 0) { allData = [{"id": 85, "fecha": "2026-03-12", "referencia": "INC. PED. 2670", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 16, "coste": "0.00"}, {"id": 84, "fecha": "2026-03-12", "referencia": "INC. PED. 493", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "KORFLEX STOCK", "origen": 1, "clase": 2, "coste": "0.00"}, {"id": 83, "fecha": "2026-03-11", "referencia": "INC.PED. 3008", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 16, "coste": "0.00"}, {"id": 82, "fecha": "2026-03-11", "referencia": "INC. PED. 651", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 16, "coste": "0.00"}, {"id": 81, "fecha": "2026-03-11", "referencia": "INC. PED. 822", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 16, "coste": "0.00"}, {"id": 80, "fecha": "2026-03-10", "referencia": "INC. PED. 21527", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 8, "clase": 3, "coste": "0.00"}, {"id": 79, "fecha": "2026-03-09", "referencia": "INC. PED. 94", "estado": 0, "cliente_grupo": "THE COLCHON COMPANY", "razon_social": "ANGLET ECOM & RETAIL SL", "transportista": "KORFLEX STOCK", "representante": "RAMON UJALDON SANCHEZ", "origen": 8, "clase": 5, "coste": "0.00"}, {"id": 78, "fecha": "2026-03-06", "referencia": "INC. PED. 21266", "estado": 0, "cliente_grupo": "MOBLES GIMENO", "razon_social": "D. GIL GIMENO S.L.", "transportista": "KORFLEX STOCK", "representante": "RAMON UJALDON SANCHEZ", "origen": 8, "clase": 5, "coste": "0.00"}, {"id": 77, "fecha": "2026-03-05", "referencia": "INC. PED. 2774", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 4, "clase": 1, "coste": "0.00"}, {"id": 76, "fecha": "2026-03-05", "referencia": "INC. PED. 289", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "NESAN DESCANS S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 16, "coste": "0.00"}, {"id": 75, "fecha": "2026-03-03", "referencia": "INC. EPD. 1048", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 8, "clase": 3, "coste": "0.00"}, {"id": 74, "fecha": "2026-03-02", "referencia": "INC. PED. 94", "estado": 0, "cliente_grupo": "THE COLCHON COMPANY", "razon_social": "ANGLET ECOM & RETAIL SL", "transportista": "KORFLEX STOCK", "representante": "RAMON UJALDON SANCHEZ", "origen": 7, "clase": 7, "coste": "0.00"}, {"id": 73, "fecha": "2026-03-02", "referencia": "INC. PED. 1655", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DESCANS 1987 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 3, "coste": "0.00"}, {"id": 72, "fecha": "2026-02-26", "referencia": "INC. PED. 1809", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 4, "clase": 1, "coste": "0.00"}, {"id": 71, "fecha": "2026-02-26", "referencia": "INC. PED. 129CL", "estado": 0, "cliente_grupo": "Clientes Varios", "razon_social": "nan", "transportista": "KORFLEX STOCK", "representante": "KORFLEX STOCK", "origen": 1, "clase": 1, "coste": "0.00"}, {"id": 70, "fecha": "2026-02-26", "referencia": "INC. PED. 2539", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 9, "coste": "0.00"}, {"id": 69, "fecha": "2026-02-25", "referencia": "INC. PED. 19059", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 18, "coste": "0.00"}, {"id": 68, "fecha": "2026-02-25", "referencia": "INC. PED. 1005", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "SANCHEZ FARRAN ANA", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 8, "clase": 3, "coste": "0.00"}, {"id": 67, "fecha": "2026-02-25", "referencia": "INC. PED. 1545", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DESCANS 1987 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 4, "clase": 1, "coste": "0.00"}, {"id": 66, "fecha": "2026-02-25", "referencia": "INC. PED. 19768", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 8, "clase": 5, "coste": "0.00"}, {"id": 65, "fecha": "2026-02-25", "referencia": "INC. PED. 2054", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "NESAN DESCANS S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 16, "coste": "0.00"}, {"id": 64, "fecha": "2026-02-25", "referencia": "INC. PED. 7340", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DESCANS 1987 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 8, "clase": 5, "coste": "0.00"}, {"id": 63, "fecha": "2026-02-25", "referencia": "INC. PED. 91", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 44, "clase": 6, "coste": "0.00"}, {"id": 62, "fecha": "2026-02-24", "referencia": "INC. PED. 1314", "estado": 0, "cliente_grupo": "THE COLCHON COMPANY", "razon_social": "ANGLET ECOM & RETAIL SL", "transportista": "KORFLEX STOCK", "representante": "RAMON UJALDON SANCHEZ", "origen": 1, "clase": 16, "coste": "0.00"}, {"id": 61, "fecha": "2026-02-24", "referencia": "INC. PED. 1314", "estado": 0, "cliente_grupo": "THE COLCHON COMPANY", "razon_social": "ANGLET ECOM & RETAIL SL", "transportista": "KORFLEX STOCK", "representante": "RAMON UJALDON SANCHEZ", "origen": 4, "clase": 1, "coste": "0.00"}, {"id": 60, "fecha": "2026-02-12", "referencia": "INC. PED. 1631", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 8, "clase": 2, "coste": "0.00"}, {"id": 59, "fecha": "2026-02-12", "referencia": "INC. PED. 12032", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 1, "coste": "0.00"}, {"id": 58, "fecha": "2026-02-12", "referencia": "INC. PED. 19182", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "KORFLEX STOCK", "origen": 1, "clase": 1, "coste": "0.00"}, {"id": 57, "fecha": "2026-02-12", "referencia": "INC. PED. 14371", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 1, "coste": "0.00"}, {"id": 56, "fecha": "2026-02-11", "referencia": "INC. PED. 6925", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 8, "clase": 8, "coste": "0.00"}, {"id": 55, "fecha": "2026-02-11", "referencia": "INC. PED. 888", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DESCANS 1987 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 6, "coste": "0.00"}, {"id": 54, "fecha": "2026-02-10", "referencia": "INC. PED. 389", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 12, "coste": "0.00"}, {"id": 53, "fecha": "2026-02-10", "referencia": "INC. PED. 18575", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "KORFLEX STOCK", "origen": 1, "clase": 16, "coste": "0.00"}, {"id": 52, "fecha": "2026-02-10", "referencia": "INC. PED. 8007", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "JOAN CARLES COCA FERRE", "origen": 8, "clase": 3, "coste": "0.00"}, {"id": 51, "fecha": "2026-02-10", "referencia": "INC. PED. 6188", "estado": 0, "cliente_grupo": "MUEBLES LOS PACOS", "razon_social": "LOS PACOS EXTREM INTERIORISMO S.L", "transportista": "KORFLEX STOCK", "representante": "EMILIO FERNANDEZ BENITEZ", "origen": 8, "clase": 3, "coste": "0.00"}, {"id": 50, "fecha": "2026-02-09", "referencia": "INC. PED. 14498", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DESCANS 1987 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 8, "clase": 3, "coste": "0.00"}, {"id": 49, "fecha": "2026-02-09", "referencia": "INC. PED. 556", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 7, "clase": 5, "coste": "0.00"}, {"id": 48, "fecha": "2026-02-09", "referencia": "INC. PED. 20435", "estado": 0, "cliente_grupo": "MUEBLES WAOO (ANAYA)", "razon_social": "MUEBLES WAOO S.L", "transportista": "KORFLEX STOCK", "representante": "RAMON UJALDON SANCHEZ", "origen": 8, "clase": 6, "coste": "0.00"}, {"id": 47, "fecha": "2026-02-09", "referencia": "INC. PED. 16553", "estado": 0, "cliente_grupo": "MOBLES GIMENO", "razon_social": "D. GIL GIMENO S.L.", "transportista": "KORFLEX STOCK", "representante": "RAMON UJALDON SANCHEZ", "origen": 8, "clase": 8, "coste": "0.00"}, {"id": 46, "fecha": "2026-02-05", "referencia": "INC. PED. 1264", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 16, "coste": "0.00"}, {"id": 45, "fecha": "2026-02-05", "referencia": "INC. PED. 19086", "estado": 0, "cliente_grupo": "MUEBLES NEBRA, S.L.", "razon_social": "MUEBLES NEBRA, S.L.", "transportista": "KORFLEX STOCK", "representante": "REPRESENTACIONES EBRO MUEBLES SL", "origen": 8, "clase": 8, "coste": "0.00"}, {"id": 44, "fecha": "2026-02-03", "referencia": "INC. PED. 19803", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 18, "coste": "0.00"}, {"id": 43, "fecha": "2026-02-03", "referencia": "INC. PED. 19460", "estado": 0, "cliente_grupo": "THE COLCHON COMPANY", "razon_social": "ANGLET ECOM & RETAIL SL", "transportista": "KORFLEX STOCK", "representante": "RAMON UJALDON SANCHEZ", "origen": 7, "clase": 5, "coste": "0.00"}, {"id": 42, "fecha": "2026-02-02", "referencia": "INC. PED. 14498", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DESCANS 1987 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 8, "clase": 3, "coste": "0.00"}, {"id": 41, "fecha": "2026-02-02", "referencia": "INC. PED. 18999", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 8, "clase": 8, "coste": "0.00"}, {"id": 40, "fecha": "2026-01-29", "referencia": "INC. PED. 16553", "estado": 0, "cliente_grupo": "MOBLES GIMENO", "razon_social": "D. GIL GIMENO S.L.", "transportista": "KORFLEX STOCK", "representante": "RAMON UJALDON SANCHEZ", "origen": 8, "clase": 5, "coste": "0.00"}, {"id": 39, "fecha": "2026-01-28", "referencia": "INC. PED.  19007", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 7, "clase": 5, "coste": "0.00"}, {"id": 38, "fecha": "2026-01-28", "referencia": "INC. PED. 423", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 16, "coste": "0.00"}, {"id": 37, "fecha": "2026-01-27", "referencia": "INC. PED. 19882", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 4, "clase": 1, "coste": "0.00"}, {"id": 36, "fecha": "2026-01-27", "referencia": "INC. PED. 15679", "estado": 0, "cliente_grupo": "THE COLCHON COMPANY", "razon_social": "ANGLET ECOM & RETAIL SL", "transportista": "KORFLEX STOCK", "representante": "RAMON UJALDON SANCHEZ", "origen": 7, "clase": 2, "coste": "0.00"}, {"id": 35, "fecha": "2026-01-26", "referencia": "INC. PED. 562", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 16, "coste": "0.00"}, {"id": 34, "fecha": "2026-01-26", "referencia": "INC. PED. 12812", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DESCANS 1987 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 4, "clase": 1, "coste": "0.00"}, {"id": 33, "fecha": "2026-01-26", "referencia": "INC. PED. 20204", "estado": 0, "cliente_grupo": "NATURAL VIDA 2002 SL", "razon_social": "NATURAL VIDA 2002 SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 14, "coste": "0.00"}, {"id": 32, "fecha": "2026-01-23", "referencia": "INC. PED. 16553", "estado": 0, "cliente_grupo": "MOBLES GIMENO", "razon_social": "D. GIL GIMENO S.L.", "transportista": "KORFLEX STOCK", "representante": "RAMON UJALDON SANCHEZ", "origen": 8, "clase": 5, "coste": "0.00"}, {"id": 31, "fecha": "2026-01-22", "referencia": "INC. PED. 23EA", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DESCANS 1987 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 1, "coste": "0.00"}, {"id": 30, "fecha": "2026-01-22", "referencia": "INC. PED. 20704", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DESCANS 1987 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 16, "coste": "0.00"}, {"id": 29, "fecha": "2026-01-22", "referencia": "INC. PED. 289", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "NESAN DESCANS S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 16, "coste": "0.00"}, {"id": 28, "fecha": "2026-01-21", "referencia": "INC.PED. 15753", "estado": 0, "cliente_grupo": "COLCHONERIAS OPORTO", "razon_social": "COLCHONERIA OPORTO S.L", "transportista": "KORFLEX STOCK", "representante": "EMILIO FERNANDEZ BENITEZ", "origen": 1, "clase": 6, "coste": "0.00"}, {"id": 27, "fecha": "2026-01-20", "referencia": "INC. PED. 14881", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DESCANS 1987 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 4, "clase": 1, "coste": "0.00"}, {"id": 26, "fecha": "2026-01-20", "referencia": "INC. PED. 18931", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "NESAN DESCANS S.L", "transportista": "KORFLEX STOCK", "representante": "KORFLEX STOCK", "origen": 8, "clase": 1, "coste": "0.00"}, {"id": 25, "fecha": "2026-01-20", "referencia": "INC. PED. 20830", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 1, "coste": "0.00"}, {"id": 24, "fecha": "2026-01-20", "referencia": "INC. PED. 175", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DESCANS 1987 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 12, "coste": "0.00"}, {"id": 23, "fecha": "2026-01-19", "referencia": "INC. PED. 94", "estado": 0, "cliente_grupo": "THE COLCHON COMPANY", "razon_social": "ANGLET ECOM & RETAIL SL", "transportista": "KORFLEX STOCK", "representante": "RAMON UJALDON SANCHEZ", "origen": 7, "clase": 4, "coste": "0.00"}, {"id": 22, "fecha": "2026-01-19", "referencia": "INC. PED. 4778", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 8, "clase": 3, "coste": "0.00"}, {"id": 21, "fecha": "2026-01-19", "referencia": "INC. PED. 17283", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 1, "coste": "0.00"}, {"id": 20, "fecha": "2026-01-19", "referencia": "INC. PED. 13629", "estado": 0, "cliente_grupo": "ADAMA MUEBLES CONFORT", "razon_social": "ADAMA MUEBLES CONFORT", "transportista": "KORFLEX STOCK", "representante": "EMILIO FERNANDEZ BENITEZ", "origen": 7, "clase": 7, "coste": "0.00"}, {"id": 19, "fecha": "2026-01-16", "referencia": "INC. PED. 21018", "estado": 0, "cliente_grupo": "MUEBLES TORRUBIA", "razon_social": "CERRILLO LOPEZ ANGEL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 8, "clase": 3, "coste": "0.00"}, {"id": 18, "fecha": "2026-01-16", "referencia": "INC. PED. 9246", "estado": 0, "cliente_grupo": "COLCHONERIA ALTAIR", "razon_social": "COMBALIA LACOSTA ERNESTO", "transportista": "KORFLEX STOCK", "representante": "REPRESENTACIONES EBRO MUEBLES SL", "origen": 8, "clase": 1, "coste": "0.00"}, {"id": 17, "fecha": "2026-01-16", "referencia": "INC. PED. 2634", "estado": 0, "cliente_grupo": "10XDIEZ COTESA", "razon_social": "COMERCIAL TEXTIL SANCHEZ, S.A", "transportista": "KORFLEX STOCK", "representante": "RAMON UJALDON SANCHEZ", "origen": 8, "clase": 3, "coste": "0.00"}, {"id": 16, "fecha": "2026-01-16", "referencia": "INC. PED. 4467", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 14, "coste": "0.00"}, {"id": 15, "fecha": "2026-01-16", "referencia": "INC. PED. 6189", "estado": 0, "cliente_grupo": "THE COLCHON COMPANY", "razon_social": "ANGLET ECOM & RETAIL SL", "transportista": "KORFLEX STOCK", "representante": "RAMON UJALDON SANCHEZ", "origen": 8, "clase": 8, "coste": "0.00"}, {"id": 14, "fecha": "2026-01-16", "referencia": "INC. PED. 94", "estado": 0, "cliente_grupo": "THE COLCHON COMPANY", "razon_social": "ANGLET ECOM & RETAIL SL", "transportista": "KORFLEX STOCK", "representante": "RAMON UJALDON SANCHEZ", "origen": 1, "clase": 1, "coste": "0.00"}, {"id": 13, "fecha": "2026-01-13", "referencia": "INC. PED.  508", "estado": 0, "cliente_grupo": "ADAMA MUEBLES CONFORT", "razon_social": "ADAMA MUEBLES CONFORT", "transportista": "KORFLEX STOCK", "representante": "EMILIO FERNANDEZ BENITEZ", "origen": 8, "clase": 1, "coste": "0.00"}, {"id": 12, "fecha": "2026-01-13", "referencia": "INC. PED. 3113", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 8, "clase": 8, "coste": "0.00"}, {"id": 11, "fecha": "2026-01-13", "referencia": "INC. PED. 2581", "estado": 0, "cliente_grupo": "MOBLES EL DRAC", "razon_social": "MOBLES EL DRAC S.L", "transportista": "KORFLEX STOCK", "representante": "RAMON UJALDON SANCHEZ", "origen": 8, "clase": 8, "coste": "0.00"}, {"id": 10, "fecha": "2026-01-13", "referencia": "INC. PED. 20804", "estado": 0, "cliente_grupo": "MATNATURE", "razon_social": "ADVISE 4 SOLUTIONS SL", "transportista": "KORFLEX STOCK", "representante": "KORFLEX STOCK", "origen": 1, "clase": 12, "coste": "0.00"}, {"id": 9, "fecha": "2026-01-12", "referencia": "INC. PED. 14291", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "KORFLEX STOCK", "origen": 8, "clase": 3, "coste": "0.00"}, {"id": 8, "fecha": "2026-01-08", "referencia": "INC. PED. 17419", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "KORFLEX STOCK", "origen": 1, "clase": 12, "coste": "0.00"}, {"id": 7, "fecha": "2026-01-08", "referencia": "INC. PED. 16128", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 3, "clase": 9, "coste": "0.00"}, {"id": 6, "fecha": "2026-01-07", "referencia": "INC. PED. 17814", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DESCANS 1987 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 14, "coste": "0.00"}, {"id": 5, "fecha": "2026-01-07", "referencia": "INC. PED. 20704", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DESCANS 1987 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 4, "clase": 1, "coste": "0.00"}, {"id": 4, "fecha": "2026-01-05", "referencia": "INC. PED. 23527", "estado": 0, "cliente_grupo": "GRUPO TODO PLANO", "razon_social": "MOBILIARIO INTERIORISMO VIA AUGUSTA 71, SL", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 8, "clase": 3, "coste": "0.00"}, {"id": 3, "fecha": "2026-01-05", "referencia": "INC. PED. 4391", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "KORFLEX STOCK", "origen": 1, "clase": 1, "coste": "0.00"}, {"id": 2, "fecha": "2026-01-02", "referencia": "INC. PED. 6193", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 1, "clase": 1, "coste": "0.00"}, {"id": 1, "fecha": "2026-01-02", "referencia": "INC. PED. 6576", "estado": 0, "cliente_grupo": "GRUPO SUE\u00d1OS", "razon_social": "DISCAMA 3000 S.L", "transportista": "KORFLEX STOCK", "representante": "MARCOS GONZALEZ LOPEZ", "origen": 3, "clase": 9, "coste": "0.00"}]; localStorage.setItem(STORAGE_KEY, JSON.stringify(allData)); }
+}
+
+// ============================================================
+// FILTERS
+// ============================================================
+function applyFilters() {
+  const period = document.getElementById('filterPeriod').value;
+  const origenFilter = document.getElementById('filterOrigen').value;
+  const now = new Date(), today = now.toISOString().slice(0,10);
+  let from = '', to = today;
+  const cEls = [document.getElementById('filterFrom'), document.getElementById('filterTo')];
+  cEls.forEach(el => el.style.display = period === 'custom' ? '' : 'none');
+  if (period === 'today') from = today;
+  else if (period === '7d') { const d = new Date(now); d.setDate(d.getDate()-7); from = d.toISOString().slice(0,10); }
+  else if (period === '30d') { const d = new Date(now); d.setDate(d.getDate()-30); from = d.toISOString().slice(0,10); }
+  else if (period === 'month') from = today.slice(0,7) + '-01';
+  else if (period === 'lastmonth') { const d = new Date(now.getFullYear(), now.getMonth()-1, 1); from = d.toISOString().slice(0,10); to = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0,10); }
+  else if (period === 'custom') { from = cEls[0].value; to = cEls[1].value; }
+  filteredData = allData.filter(d => {
+    if (from && d.fecha < from) return false;
+    if (to && d.fecha > to) return false;
+    if (origenFilter && d.origen != origenFilter) return false;
+    return true;
+  });
+  document.getElementById('filterCount').textContent = filteredData.length + ' de ' + allData.length;
+  // Show filtered date range
+  const filteredDates = filteredData.map(d=>d.fecha).filter(f=>f).sort();
+  const fMin = filteredDates[0] || '-';
+  const fMax = filteredDates[filteredDates.length-1] || '-';
+  document.getElementById('filterDateRange').textContent = 'Mostrando: ' + formatDate(fMin) + ' a ' + formatDate(fMax);
+  document.getElementById('printDateRange').textContent = 'Periodo: ' + formatDate(fMin) + ' a ' + formatDate(fMax) + ' | ' + filteredData.length + ' incidencias';
+  renderAll();
+}
+
+function populateOrigenFilter() {
+  const sel = document.getElementById('filterOrigen');
+  const codes = [...new Set(allData.map(d => d.origen))].sort((a,b) => a-b);
+  sel.innerHTML = '<option value="">Todos los productos</option>' + codes.map(c => '<option value="'+c+'">'+getOrigenLabel(c)+'</option>').join('');
+}
+
+function formatDate(d) {
+  if (!d || d === '-') return '-';
+  const p = d.split('-');
+  if (p.length === 3) return p[2]+'/'+p[1]+'/'+p[0];
+  return d;
+}
+
+function updateDataRangeBar() {
+  const dates = allData.map(d=>d.fecha).filter(f=>f).sort();
+  if (dates.length === 0) {
+    document.getElementById('dataRangeText').innerHTML = 'Sin datos cargados';
+    return;
+  }
+  const minD = dates[0], maxD = dates[dates.length-1];
+  const months = [...new Set(dates.map(d=>d.slice(0,7)))].length;
+  const defects = allData.filter(d=>!isBien(d.origen,d.clase)).length;
+  const bien = allData.length - defects;
+  document.getElementById('dataRangeText').innerHTML =
+    '<span class="range-icon">&#128197;</span>' +
+    ' Datos desde <span class="range-dates">' + formatDate(minD) + '</span>' +
+    ' hasta <span class="range-dates">' + formatDate(maxD) + '</span>' +
+    ' <span class="range-total">| ' + allData.length + ' registros | ' + months + ' meses | ' +
+    defects + ' defectos + ' + bien + ' BIEN</span>';
+}
+
+function updateImportHistory() {
+  const el = document.getElementById('importHistory');
+  if (!el) return;
+  const dates = allData.map(d=>d.fecha).filter(f=>f).sort();
+  if (dates.length === 0) { el.innerHTML = '<p style="color:var(--muted)">No hay datos cargados</p>'; return; }
+  const byMonth = {};
+  allData.forEach(d => {
+    const m = d.fecha ? d.fecha.slice(0,7) : 'Sin fecha';
+    if (!byMonth[m]) byMonth[m] = {total:0,def:0,bien:0};
+    byMonth[m].total++;
+    if (isBien(d.origen,d.clase)) byMonth[m].bien++; else byMonth[m].def++;
+  });
+  const months = Object.keys(byMonth).sort();
+  let html = '<table><thead><tr><th>Mes</th><th>Total</th><th>Defectos</th><th>BIEN</th></tr></thead><tbody>';
+  months.forEach(m => {
+    const v = byMonth[m];
+    html += '<tr><td><strong>' + m + '</strong></td><td>' + v.total + '</td><td>' + v.def + '</td><td>' + v.bien + '</td></tr>';
+  });
+  html += '<tr style="font-weight:700;background:#F0F4FF"><td>TOTAL</td><td>' + allData.length + '</td><td>' +
+    allData.filter(d=>!isBien(d.origen,d.clase)).length + '</td><td>' +
+    allData.filter(d=>isBien(d.origen,d.clase)).length + '</td></tr>';
+  html += '</tbody></table>';
+  html += '<p style="margin-top:8px;font-size:11px;color:var(--muted)">Primer registro: ' + formatDate(dates[0]) + ' | Ultimo registro: ' + formatDate(dates[dates.length-1]) + '</p>';
+  el.innerHTML = html;
+}
+
+// ============================================================
+// RENDERING
+// ============================================================
+function renderAll() { renderDashboard(); renderBien(); renderList(); renderProducto(); renderProblema(); renderCruce(); renderConfig(); updateImportHistory(); }
+
+function renderChart(id, type, dataFn, extraOpts={}) {
+  if (charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const opts = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{ display:type==='doughnut'||type==='pie', position:'right', labels:{ font:{size:10} } },
+      datalabels:{ display:true, color:'#333', font:{size:10,weight:'bold'}, anchor:'end', align:'end',
+        formatter:(v) => v > 0 ? v : '' }
+    },
+    ...extraOpts
+  };
+  // For doughnut, put labels inside
+  if (type === 'doughnut' || type === 'pie') {
+    opts.plugins.datalabels = { display:true, color:'#fff', font:{size:11,weight:'bold'}, formatter:(v,ctx) => {
+      const sum = ctx.dataset.data.reduce((a,b)=>a+b,0);
+      const pct = Math.round(v/sum*100);
+      return pct >= 5 ? v+' ('+pct+'%)' : '';
+    } };
+  }
+  charts[id] = new Chart(ctx, { type, data: dataFn(), options: opts, plugins:[ChartDataLabels] });
+}
+
+// Helper: build print table for a chart
+function printTable(containerId, headers, rows) {
+  let h = '<h4>Datos del grafico:</h4><table><thead><tr>';
+  headers.forEach(hd => h += '<th>'+hd+'</th>');
+  h += '</tr></thead><tbody>';
+  rows.forEach(r => { h += '<tr>'; r.forEach(c => h += '<td>'+c+'</td>'); h += '</tr>'; });
+  h += '</tbody></table>';
+  const el = document.getElementById(containerId);
+  if (el) el.innerHTML = h;
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const n = filteredData.length;
+  if (n === 0) { document.getElementById('kpiArea').innerHTML = '<p>Sin datos para el periodo seleccionado</p>'; return; }
+  const defects = filteredData.filter(d => !isBien(d.origen, d.clase));
+  const bienData = filteredData.filter(d => isBien(d.origen, d.clase));
+  const nDef = defects.length, nBien = bienData.length;
+  const totalCost = filteredData.reduce((s,d) => s + parseFloat(d.coste||0), 0);
+  const defCost = defects.reduce((s,d) => s + parseFloat(d.coste||0), 0);
+  const bienCost = bienData.reduce((s,d) => s + parseFloat(d.coste||0), 0);
+
+  const origenCnt = {};
+  filteredData.forEach(d => { origenCnt[d.origen] = (origenCnt[d.origen]||0)+1; });
+  const topOrigen = Object.entries(origenCnt).sort((a,b) => b[1]-a[1])[0];
+
+  const probCnt = {};
+  defects.forEach(d => { const k = d.origen+'_'+d.clase; probCnt[k] = (probCnt[k]||0)+1; });
+  const topProb = Object.entries(probCnt).sort((a,b) => b[1]-a[1])[0];
+  let topProbLabel = '-';
+  if (topProb) { const [o,c] = topProb[0].split('_').map(Number); topProbLabel = getClaseLabel(o,c); }
+
+  document.getElementById('kpiArea').innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi"><div class="label">Total Incidencias</div><div class="value">${n}</div><div class="sub">periodo analizado</div></div>
+      <div class="kpi danger"><div class="label">Defectos Reales</div><div class="value">${nDef}</div><div class="sub">${n>0?Math.round(nDef/n*100):0}% del total</div></div>
+      <div class="kpi bien"><div class="label">Sin Defecto (BIEN)</div><div class="value">${nBien}</div><div class="sub">${n>0?Math.round(nBien/n*100):0}% del total</div></div>
+      <div class="kpi warning"><div class="label">Coste Total</div><div class="value">${totalCost.toFixed(2)} EUR</div><div class="sub">Defectos: ${defCost.toFixed(2)} | BIEN: ${bienCost.toFixed(2)}</div></div>
+      <div class="kpi info"><div class="label">Producto Mas Afectado</div><div class="value" style="font-size:15px">${topOrigen ? getOrigenLabel(Number(topOrigen[0])) : '-'}</div><div class="sub">${topOrigen ? topOrigen[1]+' inc. ('+Math.round(topOrigen[1]/n*100)+'%)' : ''}</div></div>
+      <div class="kpi" style="border-left-color:var(--accent)"><div class="label">Problema Principal</div><div class="value" style="font-size:15px">${topProbLabel}</div><div class="sub">${topProb ? topProb[1]+' casos' : ''}</div></div>
+    </div>`;
+
+  // Alerts
+  let al = '';
+  const clientCnt = {};
+  filteredData.forEach(d => { clientCnt[d.cliente_grupo] = (clientCnt[d.cliente_grupo]||0)+1; });
+  Object.entries(clientCnt).forEach(([cl,cnt]) => {
+    if (cnt/n >= 0.4) al += `<div class="alert alert-danger"><div class="alert-text"><strong>Alta concentracion: ${cl}</strong><span>${cnt} incidencias (${Math.round(cnt/n*100)}%) - Riesgo de dependencia</span></div></div>`;
+  });
+  if (nBien/n >= 0.15) al += `<div class="alert alert-info"><div class="alert-text"><strong>${Math.round(nBien/n*100)}% de incidencias son BIEN (sin defecto)</strong><span>${nBien} devoluciones sin problema real. Coste improductivo: ${bienCost.toFixed(2)} EUR. Ver pestana "BIEN" para analisis detallado.</span></div></div>`;
+  Object.entries(probCnt).forEach(([key,cnt]) => {
+    if (cnt/n*100 >= 15 && cnt >= 3) {
+      const [o,c] = key.split('_').map(Number);
+      al += `<div class="alert alert-warning"><div class="alert-text"><strong>Problema recurrente: ${getClaseLabel(o,c)} en ${getOrigenLabel(o)}</strong><span>${cnt} casos (${(cnt/n*100).toFixed(0)}%) - Investigar causa raiz</span></div></div>`;
+    }
+  });
+  document.getElementById('alertArea').innerHTML = al;
+
+  // Charts
+  // 1. By product
+  renderChart('chartOrigen', 'doughnut', () => {
+    const sorted = Object.entries(origenCnt).sort((a,b) => b[1]-a[1]);
+    printTable('ptOrigen', ['Producto','Cantidad','%'],
+      sorted.map(s => [getOrigenLabel(Number(s[0])), s[1], Math.round(s[1]/n*100)+'%']));
+    return { labels:sorted.map(s=>getOrigenLabel(Number(s[0]))), datasets:[{data:sorted.map(s=>s[1]), backgroundColor:CC.slice(0,sorted.length)}] };
+  });
+
+  // 2. BIEN vs Defecto split
+  renderChart('chartBienSplit', 'doughnut', () => {
+    printTable('ptBienSplit', ['Tipo','Cantidad','%','Coste EUR'],
+      [['Defecto Real', nDef, Math.round(nDef/n*100)+'%', defCost.toFixed(2)],
+       ['Sin Defecto (BIEN)', nBien, Math.round(nBien/n*100)+'%', bienCost.toFixed(2)]]);
+    return { labels:['Defecto Real ('+nDef+')','Sin Defecto BIEN ('+nBien+')'],
+      datasets:[{data:[nDef,nBien], backgroundColor:['#DC3545','#17A2B8']}] };
+  });
+
+  // 3. Top problems
+  renderChart('chartClase', 'bar', () => {
+    const sorted = Object.entries(probCnt).sort((a,b) => b[1]-a[1]).slice(0,10);
+    const labels = sorted.map(s => { const [o,c] = s[0].split('_').map(Number); return getClaseLabel(o,c)+' ('+getOrigenLabel(o).substring(0,10)+')'; });
+    printTable('ptClase', ['Problema','Cantidad'],
+      sorted.map((s,i) => [labels[i], s[1]]));
+    return { labels, datasets:[{data:sorted.map(s=>s[1]), backgroundColor:CC.slice(0,sorted.length)}] };
+  }, { indexAxis:'y', plugins:{ datalabels:{ anchor:'end', align:'right', font:{size:11,weight:'bold'} } } });
+
+  // 4. Monthly trend with BIEN separation
+  renderChart('chartTrend', 'bar', () => {
+    const monthly = {};
+    filteredData.forEach(d => {
+      const m = d.fecha.slice(0,7);
+      if (!monthly[m]) monthly[m] = {def:0,bien:0,cost:0};
+      if (isBien(d.origen,d.clase)) monthly[m].bien++; else monthly[m].def++;
+      monthly[m].cost += parseFloat(d.coste||0);
+    });
+    const sorted = Object.entries(monthly).sort();
+    printTable('ptTrend', ['Mes','Defectos','BIEN','Total','Coste EUR'],
+      sorted.map(([m,v]) => [m, v.def, v.bien, v.def+v.bien, v.cost.toFixed(2)]));
+    return { labels:sorted.map(s=>s[0]),
+      datasets:[
+        {label:'Defectos Reales', data:sorted.map(s=>s[1].def), backgroundColor:'#DC3545', stack:'a'},
+        {label:'BIEN (sin defecto)', data:sorted.map(s=>s[1].bien), backgroundColor:'#17A2B8', stack:'a'}
+      ] };
+  }, { scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}} });
+
+  // 5. Top clients
+  renderChart('chartClientes', 'bar', () => {
+    const sorted = Object.entries(clientCnt).sort((a,b) => b[1]-a[1]).slice(0,5);
+    printTable('ptClientes', ['Cliente','Incidencias','%'],
+      sorted.map(s => [s[0], s[1], Math.round(s[1]/n*100)+'%']));
+    return { labels:sorted.map(s=>s[0]), datasets:[{data:sorted.map(s=>s[1]), backgroundColor:CC}] };
+  });
+
+  // 6. Cost split by product
+  renderChart('chartCostSplit', 'bar', () => {
+    const costData = {};
+    filteredData.forEach(d => {
+      const o = d.origen;
+      if (!costData[o]) costData[o] = {def:0,bien:0};
+      const c = parseFloat(d.coste||0);
+      if (isBien(d.origen,d.clase)) costData[o].bien += c; else costData[o].def += c;
+    });
+    const sorted = Object.entries(costData).sort((a,b) => (b[1].def+b[1].bien) - (a[1].def+a[1].bien)).filter(s => s[1].def+s[1].bien > 0);
+    if (sorted.length === 0) sorted.push(['0',{def:0,bien:0}]);
+    printTable('ptCostSplit', ['Producto','Coste Defectos','Coste BIEN','Coste Total'],
+      sorted.map(s => [getOrigenLabel(Number(s[0])), s[1].def.toFixed(2), s[1].bien.toFixed(2), (s[1].def+s[1].bien).toFixed(2)]));
+    return { labels:sorted.map(s=>getOrigenLabel(Number(s[0]))),
+      datasets:[
+        {label:'Coste Defectos', data:sorted.map(s=>s[1].def), backgroundColor:'#DC3545', stack:'a'},
+        {label:'Coste BIEN', data:sorted.map(s=>s[1].bien), backgroundColor:'#17A2B8', stack:'a'}
+      ] };
+  }, { scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}} });
+}
+
+// ============================================================
+// BIEN TAB
+// ============================================================
+function renderBien() {
+  const n = filteredData.length;
+  if (n === 0) { document.getElementById('bienContent').innerHTML = '<p>Sin datos</p>'; return; }
+
+  const bienData = filteredData.filter(d => isBien(d.origen, d.clase));
+  const nBien = bienData.length;
+  const bienCost = bienData.reduce((s,d) => s + parseFloat(d.coste||0), 0);
+  const totalCost = filteredData.reduce((s,d) => s + parseFloat(d.coste||0), 0);
+
+  let html = '';
+
+  // KPIs
+  html += `<div class="kpi-grid">
+    <div class="kpi bien"><div class="label">Total Devoluciones BIEN</div><div class="value">${nBien}</div><div class="sub">${n>0?Math.round(nBien/n*100):0}% del total de incidencias</div></div>
+    <div class="kpi warning"><div class="label">Coste Improductivo</div><div class="value">${bienCost.toFixed(2)} EUR</div><div class="sub">${totalCost>0?Math.round(bienCost/totalCost*100):0}% del coste total</div></div>
+    <div class="kpi"><div class="label">Coste Medio por BIEN</div><div class="value">${nBien>0?(bienCost/nBien).toFixed(2):'0'} EUR</div><div class="sub">por devolucion sin defecto</div></div>
+  </div>`;
+
+  // By product
+  const bienByOrigen = {};
+  const totalByOrigen = {};
+  filteredData.forEach(d => { totalByOrigen[d.origen] = (totalByOrigen[d.origen]||0)+1; });
+  bienData.forEach(d => { bienByOrigen[d.origen] = (bienByOrigen[d.origen]||0)+1; });
+  const sortedOrigen = Object.entries(bienByOrigen).sort((a,b) => b[1]-a[1]);
+
+  html += '<div class="card"><h3>BIEN por Producto - Donde se concentran las devoluciones sin defecto?</h3>';
+  if (sortedOrigen.length === 0) {
+    html += '<p>No hay devoluciones BIEN en este periodo.</p>';
+  } else {
+    html += '<table><thead><tr><th>Producto</th><th>BIEN</th><th>Total Inc.</th><th>% BIEN del Producto</th><th>Coste BIEN EUR</th></tr></thead><tbody>';
+    sortedOrigen.forEach(([o, cnt]) => {
+      const total = totalByOrigen[o] || 0;
+      const cost = bienData.filter(d => d.origen == o).reduce((s,d) => s+parseFloat(d.coste||0), 0);
+      html += `<tr><td><span class="tag tag-info">${getOrigenLabel(Number(o))}</span></td><td><strong>${cnt}</strong></td><td>${total}</td><td>${total>0?Math.round(cnt/total*100):0}%</td><td>${cost.toFixed(2)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+
+  // By client
+  const bienByClient = {};
+  const totalByClient = {};
+  filteredData.forEach(d => { totalByClient[d.cliente_grupo] = (totalByClient[d.cliente_grupo]||0)+1; });
+  bienData.forEach(d => { bienByClient[d.cliente_grupo] = (bienByClient[d.cliente_grupo]||0)+1; });
+  const sortedClient = Object.entries(bienByClient).sort((a,b) => b[1]-a[1]);
+
+  html += '<div class="card"><h3>BIEN por Cliente - Que clientes devuelven mas productos en buen estado?</h3>';
+  if (sortedClient.length === 0) {
+    html += '<p>No hay devoluciones BIEN en este periodo.</p>';
+  } else {
+    html += '<table><thead><tr><th>Cliente</th><th>BIEN</th><th>Total Inc.</th><th>% BIEN del Cliente</th><th>Coste BIEN EUR</th><th>Valoracion</th></tr></thead><tbody>';
+    sortedClient.forEach(([cl, cnt]) => {
+      const total = totalByClient[cl] || 0;
+      const pctBien = total > 0 ? cnt/total*100 : 0;
+      const cost = bienData.filter(d => d.cliente_grupo === cl).reduce((s,d) => s+parseFloat(d.coste||0), 0);
+      let alert = '';
+      if (pctBien >= 50 && cnt >= 2) alert = '<span class="tag tag-danger">ALTO - Revisar comunicacion</span>';
+      else if (pctBien >= 30) alert = '<span class="tag tag-warning">MEDIO</span>';
+      else alert = '<span class="tag tag-success">NORMAL</span>';
+      html += `<tr><td>${cl}</td><td><strong>${cnt}</strong></td><td>${total}</td><td>${Math.round(pctBien)}%</td><td>${cost.toFixed(2)}</td><td>${alert}</td></tr>`;
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+
+  // Monthly trend
+  const bienMonthly = {};
+  bienData.forEach(d => { const m = d.fecha.slice(0,7); bienMonthly[m] = (bienMonthly[m]||0)+1; });
+  const defMonthly = {};
+  filteredData.filter(d => !isBien(d.origen,d.clase)).forEach(d => { const m = d.fecha.slice(0,7); defMonthly[m] = (defMonthly[m]||0)+1; });
+  const months = [...new Set([...Object.keys(bienMonthly), ...Object.keys(defMonthly)])].sort();
+
+  html += '<div class="card"><h3>Evolucion Mensual: BIEN vs Defectos</h3>';
+  html += '<div style="height:250px"><canvas id="chartBienTrend"></canvas></div>';
+  html += '<div id="ptBienTrend" class="print-data-table"></div>';
+  html += '</div>';
+
+  // Recommendations
+  html += '<div class="card"><h3>Recomendaciones para reducir BIEN</h3>';
+  html += '<div class="alert alert-info"><div class="alert-text"><strong>1. Revisar proceso de venta</strong><span>Si muchos BIEN vienen de un cliente especifico, puede haber problemas de comunicacion sobre las caracteristicas del producto.</span></div></div>';
+  html += '<div class="alert alert-info"><div class="alert-text"><strong>2. Inspeccion en origen</strong><span>Verificar el producto antes de enviar reduce devoluciones por falsos reportes.</span></div></div>';
+  html += '<div class="alert alert-info"><div class="alert-text"><strong>3. Politica de devoluciones</strong><span>Evaluar si los costes de BIEN justifican revisar las condiciones de devolucion.</span></div></div>';
+  if (sortedClient.length > 0) {
+    const topBienClient = sortedClient[0];
+    html += `<div class="alert alert-warning"><div class="alert-text"><strong>Accion prioritaria: ${topBienClient[0]}</strong><span>Es el cliente con mas devoluciones BIEN (${topBienClient[1]}). Reunion con comercial para entender por que devuelve productos en buen estado.</span></div></div>`;
+  }
+  html += '</div>';
+
+  // List
+  html += '<div class="card"><h3>Listado de Incidencias BIEN</h3>';
+  html += '<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Referencia</th><th>Cliente</th><th>Producto</th><th>Coste</th></tr></thead><tbody>';
+  bienData.sort((a,b) => b.fecha > a.fecha ? 1 : -1).forEach(d => {
+    html += `<tr><td>${d.fecha}</td><td>${d.referencia}</td><td>${d.cliente_grupo}</td><td>${getOrigenLabel(d.origen)}</td><td>${parseFloat(d.coste||0).toFixed(2)} EUR</td></tr>`;
+  });
+  html += '</tbody></table></div></div>';
+
+  document.getElementById('bienContent').innerHTML = html;
+
+  // Render trend chart
+  setTimeout(() => {
+    printTable('ptBienTrend', ['Mes','Defectos','BIEN','% BIEN'],
+      months.map(m => [m, defMonthly[m]||0, bienMonthly[m]||0,
+        ((bienMonthly[m]||0)/((defMonthly[m]||0)+(bienMonthly[m]||0))*100||0).toFixed(0)+'%']));
+    renderChart('chartBienTrend', 'bar', () => ({
+      labels: months,
+      datasets: [
+        {label:'Defectos Reales', data:months.map(m=>defMonthly[m]||0), backgroundColor:'#DC3545', stack:'a'},
+        {label:'BIEN', data:months.map(m=>bienMonthly[m]||0), backgroundColor:'#17A2B8', stack:'a'}
+      ]
+    }), { scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}} });
+  }, 100);
+}
+
+// ============================================================
+// LISTADO
+// ============================================================
+function renderList() {
+  const search = (document.getElementById('searchBox')?.value || '').toLowerCase();
+  let data = filteredData;
+  if (search) data = data.filter(d =>
+    d.referencia.toLowerCase().includes(search) ||
+    d.cliente_grupo.toLowerCase().includes(search) ||
+    getOrigenLabel(d.origen).toLowerCase().includes(search) ||
+    getClaseLabel(d.origen, d.clase).toLowerCase().includes(search)
+  );
+  data = [...data].sort((a,b) => {
+    let va=a[currentSort.key], vb=b[currentSort.key];
+    if (currentSort.key==='fecha') return currentSort.dir==='desc'?(vb>va?1:-1):(va>vb?1:-1);
+    return currentSort.dir==='desc'?String(vb).localeCompare(String(va)):String(va).localeCompare(String(vb));
+  });
+  const si = k => currentSort.key===k?(currentSort.dir==='desc'?' v':' ^'):'';
+  let html = `<table><thead><tr>
+    <th style="cursor:pointer" onclick="sortBy('fecha')">Fecha${si('fecha')}</th>
+    <th>Referencia</th><th>Cliente</th>
+    <th style="cursor:pointer" onclick="sortBy('origen')">Producto${si('origen')}</th>
+    <th style="cursor:pointer" onclick="sortBy('clase')">Problema${si('clase')}</th>
+    <th>Coste</th><th>Tipo</th>
+  </tr></thead><tbody>`;
+  data.forEach(d => {
+    const bien = isBien(d.origen, d.clase);
+    html += `<tr${bien?' style="background:#E8F8F5"':''}>
+      <td>${d.fecha}</td><td>${d.referencia}</td><td>${d.cliente_grupo}</td>
+      <td><span class="tag tag-info">${getOrigenLabel(d.origen)}</span></td>
+      <td><span class="tag ${bien?'tag-bien':'tag-warning'}">${getClaseLabel(d.origen, d.clase)}</span></td>
+      <td>${parseFloat(d.coste||0).toFixed(2)}</td>
+      <td>${bien?'<span class="tag tag-success">BIEN</span>':'<span class="tag tag-danger">DEFECTO</span>'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('listTable').innerHTML = html;
+}
+
+function sortBy(key) {
+  if (currentSort.key===key) currentSort.dir = currentSort.dir==='desc'?'asc':'desc';
+  else { currentSort.key=key; currentSort.dir='desc'; }
+  renderList();
+}
+
+function exportCSV() {
+  const rows = filteredData.map(d => [d.id,d.fecha,d.referencia,d.cliente_grupo,d.razon_social,d.representante,getOrigenLabel(d.origen),getClaseLabel(d.origen,d.clase),isBien(d.origen,d.clase)?'BIEN':'DEFECTO',d.coste]);
+  const csv = 'ID;Fecha;Referencia;Cliente;Razon Social;Representante;Producto;Problema;Tipo;Coste\n' + rows.map(r=>r.join(';')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='incidencias_korflex_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+}
+
+// ============================================================
+// POR PRODUCTO
+// ============================================================
+function renderProducto() {
+  const n = filteredData.length;
+  if (n===0) { document.getElementById('productoContent').innerHTML='<p>Sin datos</p>'; return; }
+  const origenCnt={}, origenProb={};
+  filteredData.forEach(d => {
+    origenCnt[d.origen]=(origenCnt[d.origen]||0)+1;
+    if (!origenProb[d.origen]) origenProb[d.origen]={};
+    origenProb[d.origen][d.clase]=(origenProb[d.origen][d.clase]||0)+1;
+  });
+  const sorted = Object.entries(origenCnt).sort((a,b)=>b[1]-a[1]);
+
+  let html = '<div class="card"><h3>Ranking de Productos</h3><div style="height:280px"><canvas id="chartParetoProd"></canvas></div>';
+  html += '<div id="ptParetoProd" class="print-data-table"></div></div>';
+
+  // Summary table
+  html += '<div class="card"><h3>Resumen por Producto</h3>';
+  html += '<table><thead><tr><th>Producto</th><th>Total</th><th>Defectos</th><th>BIEN</th><th>% Total</th><th>Coste EUR</th></tr></thead><tbody>';
+  sorted.forEach(([o,cnt]) => {
+    const origen = Number(o);
+    const items = filteredData.filter(d=>d.origen===origen);
+    const defs = items.filter(d=>!isBien(d.origen,d.clase)).length;
+    const bien = cnt - defs;
+    const cost = items.reduce((s,d)=>s+parseFloat(d.coste||0),0);
+    html += `<tr><td><span class="tag tag-info">${getOrigenLabel(origen)}</span></td><td><strong>${cnt}</strong></td><td>${defs}</td><td>${bien>0?'<span class="tag tag-success">'+bien+'</span>':'0'}</td><td>${Math.round(cnt/n*100)}%</td><td>${cost.toFixed(2)}</td></tr>`;
+  });
+  html += '</tbody></table></div>';
+
+  // Detail per product
+  sorted.forEach(([o,cnt]) => {
+    const origen = Number(o);
+    const problems = Object.entries(origenProb[origen]||{}).sort((a,b)=>b[1]-a[1]);
+    html += `<div class="card"><h3>${getOrigenLabel(origen)} - ${cnt} incidencias</h3>`;
+    html += '<table><thead><tr><th>Problema</th><th>Cod</th><th>Cantidad</th><th>% Producto</th><th>Tipo</th></tr></thead><tbody>';
+    problems.forEach(([clase,count]) => {
+      const c = Number(clase);
+      const bien = isBien(origen,c);
+      html += `<tr${bien?' style="background:#E8F8F5"':''}>
+        <td><strong>${getClaseLabel(origen,c)}</strong></td><td>${c}</td><td><strong>${count}</strong></td>
+        <td>${Math.round(count/cnt*100)}%</td>
+        <td>${bien?'<span class="tag tag-success">BIEN</span>':'<span class="tag tag-danger">DEFECTO</span>'}</td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+  });
+
+  document.getElementById('productoContent').innerHTML = html;
+
+  setTimeout(() => {
+    const labels = sorted.map(s=>getOrigenLabel(Number(s[0])));
+    const values = sorted.map(s=>s[1]);
+    let cD=[], ac=0;
+    values.forEach(v => { ac+=v; cD.push(Math.round(ac/n*100)); });
+    printTable('ptParetoProd', ['Producto','Cantidad','% Acum.'],
+      sorted.map((s,i) => [getOrigenLabel(Number(s[0])), s[1], cD[i]+'%']));
+    renderChart('chartParetoProd', 'bar', () => ({
+      labels, datasets: [
+        {type:'bar', data:values, backgroundColor:CC.slice(0,labels.length), yAxisID:'y'},
+        {type:'line', data:cD, borderColor:'#DC3545', borderWidth:2, pointRadius:3, yAxisID:'y1', label:'% Acumulado'}
+      ]
+    }), { scales:{ y:{beginAtZero:true}, y1:{position:'right',min:0,max:100,grid:{drawOnChartArea:false}} } });
+  }, 100);
+}
+
+// ============================================================
+// POR PROBLEMA (PARETO)
+// ============================================================
+function renderProblema() {
+  const n = filteredData.length;
+  if (n===0) { document.getElementById('problemaContent').innerHTML='<p>Sin datos</p>'; return; }
+  const probCnt = {};
+  filteredData.forEach(d => {
+    if (isBien(d.origen,d.clase)) return;
+    const k = d.origen+'_'+d.clase;
+    probCnt[k]=(probCnt[k]||0)+1;
+  });
+  const sorted = Object.entries(probCnt).sort((a,b)=>b[1]-a[1]);
+  const totalDef = sorted.reduce((s,[,v])=>s+v,0);
+
+  let html = '<div class="card"><h3>Pareto de Problemas (solo defectos reales)</h3>';
+  html += '<div style="height:320px"><canvas id="chartParetoProb"></canvas></div>';
+  html += '<div id="ptParetoProb" class="print-data-table"></div></div>';
+
+  html += '<div class="card"><h3>Detalle de Problemas</h3>';
+  html += '<table><thead><tr><th>#</th><th>Producto</th><th>Problema</th><th>Cantidad</th><th>% Total</th><th>% Acum.</th><th>Zona</th></tr></thead><tbody>';
+  let acc=0;
+  sorted.forEach(([key,cnt],i) => {
+    const [o,c] = key.split('_').map(Number);
+    acc+=cnt;
+    const pctAcc = acc/totalDef*100;
+    const zone = pctAcc<=80?'VITAL':'UTIL';
+    html += `<tr${pctAcc>80?' style="opacity:0.6"':''}>
+      <td>${i+1}</td><td><span class="tag tag-info">${getOrigenLabel(o)}</span></td>
+      <td><strong>${getClaseLabel(o,c)}</strong></td><td><strong>${cnt}</strong></td>
+      <td>${(cnt/totalDef*100).toFixed(1)}%</td><td>${pctAcc.toFixed(1)}%</td>
+      <td><span class="tag ${zone==='VITAL'?'tag-danger':'tag-warning'}">${zone}</span></td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+
+  const vitalCount = sorted.reduce((c,[,cnt],i) => {
+    const a = sorted.slice(0,i+1).reduce((s,[,v])=>s+v,0);
+    return a/totalDef*100<=80 ? i+1 : c;
+  }, 0);
+  html += `<div class="alert alert-info"><div class="alert-text"><strong>Conclusion Pareto:</strong> Resolviendo los <strong>${vitalCount} problemas VITALES</strong> se eliminaria el 80% de los defectos.</div></div>`;
+
+  document.getElementById('problemaContent').innerHTML = html;
+
+  setTimeout(() => {
+    const top15 = sorted.slice(0,15);
+    const labels = top15.map(s => { const [o,c]=s[0].split('_').map(Number); return getClaseLabel(o,c); });
+    const values = top15.map(s=>s[1]);
+    let cD=[], ac=0;
+    values.forEach(v => { ac+=v; cD.push(Math.round(ac/totalDef*100)); });
+    printTable('ptParetoProb', ['Problema','Cantidad','% Acum.'],
+      top15.map((s,i) => {const [o,c]=s[0].split('_').map(Number); return [getOrigenLabel(o)+' > '+getClaseLabel(o,c), s[1], cD[i]+'%'];}));
+    renderChart('chartParetoProb', 'bar', () => ({
+      labels, datasets:[
+        {type:'bar', data:values, backgroundColor:CC.slice(0,labels.length), yAxisID:'y'},
+        {type:'line', data:cD, borderColor:'#DC3545', borderWidth:2, pointRadius:3, yAxisID:'y1', label:'% Acumulado'}
+      ]
+    }), { scales:{ y:{beginAtZero:true}, y1:{position:'right',min:0,max:100,grid:{drawOnChartArea:false}} } });
+  }, 100);
+}
+
+// ============================================================
+// CRUCE
+// ============================================================
+function renderCruce() {
+  const n = filteredData.length;
+  if (n===0) { document.getElementById('cruceContent').innerHTML='<p>Sin datos</p>'; return; }
+  const origenes = [...new Set(filteredData.map(d=>d.origen))].sort((a,b)=>a-b);
+  let html = '';
+  origenes.forEach(o => {
+    const items = filteredData.filter(d=>d.origen===o);
+    const claseCnt = {};
+    items.forEach(d => { claseCnt[d.clase]=(claseCnt[d.clase]||0)+1; });
+    const sorted = Object.entries(claseCnt).sort((a,b)=>b[1]-a[1]);
+    const maxVal = sorted[0]?.[1]||1;
+    html += `<div class="card"><h3>${getOrigenLabel(o)} - ${items.length} incidencias</h3>`;
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">';
+    sorted.forEach(([clase,cnt]) => {
+      const c=Number(clase), bien=isBien(o,c);
+      const bg = bien?`rgba(23,162,184,${cnt/maxVal*0.5+0.15})`:`rgba(220,53,69,${cnt/maxVal*0.5+0.15})`;
+      html += `<div style="background:${bg};padding:8px 12px;border-radius:8px;text-align:center;min-width:100px">
+        <div style="font-weight:700;font-size:18px">${cnt}</div>
+        <div style="font-size:10px;font-weight:600">${getClaseLabel(o,c)}${bien?' (BIEN)':''}</div>
+      </div>`;
+    });
+    html += '</div></div>';
+  });
+
+  // Top combos
+  const probCnt = {};
+  filteredData.filter(d=>!isBien(d.origen,d.clase)).forEach(d => { const k=d.origen+'_'+d.clase; probCnt[k]=(probCnt[k]||0)+1; });
+  const topC = Object.entries(probCnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  html += '<div class="card"><h3>Top 5 Combinaciones Producto+Problema</h3>';
+  topC.forEach(([key,cnt]) => {
+    const [o,c]=key.split('_').map(Number);
+    html += `<div class="alert alert-warning"><div class="alert-text"><strong>${getOrigenLabel(o)} > ${getClaseLabel(o,c)}: ${cnt} casos (${Math.round(cnt/n*100)}%)</strong></div></div>`;
+  });
+  html += '</div>';
+  document.getElementById('cruceContent').innerHTML = html;
+}
+
+// ============================================================
+// COMPARAR
+// ============================================================
+function runCompare() {
+  const fA=document.getElementById('compFromA').value, tA=document.getElementById('compToA').value;
+  const fB=document.getElementById('compFromB').value, tB=document.getElementById('compToB').value;
+  if (!fA||!tA||!fB||!tB) { document.getElementById('compareResult').innerHTML='<div class="alert alert-info"><div class="alert-text"><strong>Selecciona ambos periodos</strong></div></div>'; return; }
+  const dA=allData.filter(d=>d.fecha>=fA&&d.fecha<=tA), dB=allData.filter(d=>d.fecha>=fB&&d.fecha<=tB);
+  function cRow(l,a,b) {
+    const diff=b-a, pct=a>0?((b-a)/a*100).toFixed(1):(b>0?'+100':'0');
+    const color=diff>0?'var(--danger)':diff<0?'var(--success)':'var(--muted)';
+    const arrow=diff>0?'UP':diff<0?'DN':'=';
+    return `<tr><td>${l}</td><td style="text-align:center">${a}</td><td style="text-align:center">${b}</td><td style="text-align:center;color:${color};font-weight:700">${arrow} ${Math.abs(diff)} (${pct}%)</td></tr>`;
+  }
+  let html = `<div class="card"><h3>Comparacion</h3><table><thead><tr><th>Metrica</th><th>A (${fA} a ${tA})</th><th>B (${fB} a ${tB})</th><th>Variacion</th></tr></thead><tbody>`;
+  html += cRow('Total', dA.length, dB.length);
+  html += cRow('Defectos', dA.filter(d=>!isBien(d.origen,d.clase)).length, dB.filter(d=>!isBien(d.origen,d.clase)).length);
+  html += cRow('BIEN', dA.filter(d=>isBien(d.origen,d.clase)).length, dB.filter(d=>isBien(d.origen,d.clase)).length);
+  html += cRow('Coste EUR', dA.reduce((s,d)=>s+parseFloat(d.coste||0),0).toFixed(2), dB.reduce((s,d)=>s+parseFloat(d.coste||0),0).toFixed(2));
+  html += '</tbody></table></div>';
+  document.getElementById('compareResult').innerHTML = html;
+}
+
+// ============================================================
+// IMPORT
+// ============================================================
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      let text = e.target.result;
+      let sep = '\t';
+      const lines = text.split('\n').filter(l=>l.trim());
+      if (lines.length>1 && !lines[1].includes('\t') && lines[1].includes(';')) sep=';';
+      let hIdx=0;
+      for (let i=0;i<Math.min(3,lines.length);i++) { if (lines[i].toLowerCase().includes('fecha')||lines[i].toLowerCase().includes('incidencia')) { hIdx=i; break; } }
+      const headers = lines[hIdx].split(sep).map(h=>h.trim().toLowerCase().replace(/[\r"]/g,''));
+      const cm={};
+      headers.forEach((h,i) => {
+        if (h.includes('incidencia')&&!h.includes('clase')&&!h.includes('sub')) cm.id=i;
+        if (h.includes('fecha')&&!h.includes('cierre')) cm.fecha=i;
+        if (h.includes('referencia')) cm.referencia=i;
+        if (h.includes('estado')&&!cm.estado) cm.estado=i;
+        if (h==='origen'||h.includes('origen inc')) cm.origen=i;
+        if (h.includes('clase')&&h.includes('incid')) cm.clase=i;
+        if (h.includes('grupo')||h.includes('cliente')) { if(!cm.cliente) cm.cliente=i; }
+        if (h.includes('razon')||h.includes('razn')||h.includes('razón')) cm.razon=i;
+        if (h.includes('transport')) cm.transportista=i;
+        if (h.includes('represent')) cm.representante=i;
+        if (h.includes('coste')||h.includes('total')) cm.coste=i;
+      });
+      const existingIds = new Set(allData.map(d=>d.id));
+      pendingImport = [];
+      for (let i=hIdx+1;i<lines.length;i++) {
+        const cols = lines[i].split(sep).map(c=>c.trim().replace(/[\r"]/g,''));
+        if (cols.length<5) continue;
+        const id = parseInt(cols[cm.id]);
+        if (!id||existingIds.has(id)) continue;
+        let fecha = cols[cm.fecha]||'';
+        if (fecha.includes('/')) {
+          const p=fecha.split('/');
+          if (p.length===3) fecha=(p[2].length===2?'20'+p[2]:p[2])+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
+        }
+        pendingImport.push({id,fecha:fecha.slice(0,10),referencia:cols[cm.referencia]||'',estado:cols[cm.estado]||'',
+          cliente_grupo:cols[cm.cliente]||'',razon_social:cols[cm.razon]||'',transportista:cols[cm.transportista]||'',
+          representante:cols[cm.representante]||'',origen:parseInt(cols[cm.origen])||0,clase:parseInt(cols[cm.clase])||0,coste:cols[cm.coste]||'0'});
+      }
+      let ph=`<div style="margin-top:12px"><strong>${pendingImport.length} registros nuevos</strong></div>`;
+      if (pendingImport.length>0) {
+        ph += '<div class="table-wrap" style="max-height:200px;margin:8px 0"><table><thead><tr><th>ID</th><th>Fecha</th><th>Producto</th><th>Problema</th><th>Tipo</th></tr></thead><tbody>';
+        pendingImport.slice(0,20).forEach(d => {
+          const bien=isBien(d.origen,d.clase);
+          ph += `<tr><td>${d.id}</td><td>${d.fecha}</td><td>${getOrigenLabel(d.origen)}</td><td>${getClaseLabel(d.origen,d.clase)}</td><td>${bien?'BIEN':'DEFECTO'}</td></tr>`;
+        });
+        ph += '</tbody></table></div>';
+        ph += `<button class="btn btn-success" onclick="confirmImport()">Importar ${pendingImport.length} registros</button> `;
+        ph += `<button class="btn btn-outline" onclick="pendingImport=[];document.getElementById('importPreview').innerHTML='';">Cancelar</button>`;
+      }
+      document.getElementById('importPreview').innerHTML = ph;
+    } catch(err) {
+      document.getElementById('importPreview').innerHTML = '<div class="alert alert-danger"><div class="alert-text"><strong>Error: '+err.message+'</strong></div></div>';
+    }
+  };
+  reader.readAsText(file, 'latin1');
+}
+
+function confirmImport() {
+  allData=[...allData,...pendingImport];
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(allData));
+  const count = pendingImport.length;
+  pendingImport=[];
+  document.getElementById('importPreview').innerHTML='<div class="alert alert-info"><div class="alert-text"><strong>Importacion completada: '+count+' registros nuevos anadidos</strong><span>Total de registros: '+allData.length+'</span></div></div>';
+  populateOrigenFilter(); updateDataRangeBar(); applyFilters();
+}
+
+// ============================================================
+// CONFIG
+// ============================================================
+function renderConfig() {
+  let html='<h4>Codigos Origen (Producto) - '+Object.keys(DEFAULT_ORIGEN).length+' codigos</h4>';
+  html+='<div class="table-wrap" style="max-height:250px"><table><thead><tr><th>Cod</th><th>Producto</th><th>SubOrigenes</th></tr></thead><tbody>';
+  Object.keys(DEFAULT_ORIGEN).sort((a,b)=>a-b).forEach(k => {
+    html+=`<tr><td>${k}</td><td>${getOrigenLabel(Number(k))}</td><td>${SUBORIGEN[k]?Object.keys(SUBORIGEN[k]).length:0} tipos</td></tr>`;
+  });
+  html+='</tbody></table></div>';
+  html+='<h4 style="margin-top:16px">SubOrigenes - 307 combinaciones</h4>';
+  html+='<div class="table-wrap" style="max-height:300px"><table><thead><tr><th>Producto</th><th>Cod</th><th>Problema</th></tr></thead><tbody>';
+  Object.keys(SUBORIGEN).sort((a,b)=>a-b).forEach(o => {
+    Object.keys(SUBORIGEN[o]).sort((a,b)=>a-b).forEach(t => {
+      html+=`<tr><td>${getOrigenLabel(Number(o))}</td><td>${t}</td><td>${SUBORIGEN[o][t]}</td></tr>`;
+    });
+  });
+  html+='</tbody></table></div>';
+  document.getElementById('configArea').innerHTML = html;
+}
+
+function exportConfig() {
+  const blob=new Blob([JSON.stringify({origen:config.origen,suborigen:SUBORIGEN},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='korflex_config.json'; a.click();
+}
+
+// PDF Export
+function exportPDF() {
+  document.querySelectorAll('.legend-box').forEach(el=>el.open=true);
+  window.print();
+}
+
+// Tabs
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  const tab=document.getElementById('tab-'+name);
+  if (tab) tab.classList.add('active');
+  const names=['dashboard','bien','listado','producto','problema','cruce','comparar','import','config'];
+  const idx=names.indexOf(name);
+  const btns=document.querySelectorAll('.nav button');
+  if (idx>=0 && btns[idx]) btns[idx].classList.add('active');
+}
+
+// INIT
+loadConfig(); loadData(); populateOrigenFilter(); updateDataRangeBar();
+document.getElementById('dataInfo').textContent = allData.length+' incidencias | v7.0';
+applyFilters();
+</script>
+</body>
+</html>
