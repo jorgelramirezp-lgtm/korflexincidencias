@@ -201,7 +201,7 @@ tr:nth-child(even) { background:#FAFBFC; }
 <div class="header">
   <div class="logo">
     <h1>KORFLEX - Control de Calidad</h1>
-    <span class="badge">v8.0</span>
+    <span class="badge" onclick="unlockAdmin()" style="cursor:pointer" title="v8.0">v8.0</span>
   </div>
   <div class="right">
     <div>Sistema de Analisis de Incidencias</div>
@@ -222,8 +222,8 @@ tr:nth-child(even) { background:#FAFBFC; }
   <button onclick="showTab('problema')">Por Problema</button>
   <button onclick="showTab('cruce')">Cruce</button>
   <button onclick="showTab('comparar')">Comparar</button>
-  <button onclick="showTab('import')">&#128274; Importar</button>
-  <button onclick="showTab('config')">&#128274; Config</button>
+  <button id="btnImport" onclick="showTab('import')" style="display:none">Importar</button>
+  <button id="btnConfig" onclick="showTab('config')" style="display:none">Config</button>
   <button class="btn-pdf" onclick="exportPDF()">PDF</button>
 </div>
 
@@ -1255,15 +1255,19 @@ function exportPDF() {
 
 // Tabs
 let adminUnlocked = false;
-function showTab(name) {
-  if ((name === 'import' || name === 'config') && !adminUnlocked) {
-    const pwd = prompt('Acceso restringido. Introduce la contrasena de administrador:');
-    if (pwd !== '123456') {
-      alert('Contrasena incorrecta.');
-      return;
-    }
+function unlockAdmin() {
+  if (adminUnlocked) return;
+  const pwd = prompt('Acceso administrador. Introduce la contrasena:');
+  if (pwd === '123456') {
     adminUnlocked = true;
+    document.getElementById('btnImport').style.display = '';
+    document.getElementById('btnConfig').style.display = '';
+    alert('Modo administrador activado. Ahora puedes ver Importar y Config.');
+  } else if (pwd !== null) {
+    alert('Contrasena incorrecta.');
   }
+}
+function showTab(name) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
   const tab=document.getElementById('tab-'+name);
