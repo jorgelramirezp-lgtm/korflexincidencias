@@ -132,25 +132,85 @@ tr:nth-child(even) { background:#FAFBFC; }
 /* ==== PRINT ==== */
 @media print {
   * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
-  body { background:white; font-size:10px; }
-  .header { padding:8px 12px; }
-  .header h1 { font-size:14px; }
-  .nav, .filters, .btn, #tab-import, #tab-config, .no-print, .data-range-bar { display:none !important; }
-  .tab { display:block !important; page-break-inside:avoid; margin-bottom:16px; }
-  .tab h2 { font-size:14px; border-bottom:2px solid var(--primary); padding-bottom:4px; margin-bottom:10px; }
-  .chart-row { grid-template-columns:1fr 1fr; }
-  .card { box-shadow:none; border:1px solid #ddd; page-break-inside:avoid; padding:10px; }
-  .kpi { box-shadow:none; border:1px solid #ddd; padding:10px; }
-  .kpi .value { font-size:18px; }
-  .legend-box { break-inside:avoid; }
-  .legend-box .legend-content { display:block !important; }
-  .alert { break-inside:avoid; }
-  canvas { max-height:220px !important; }
-  .chart-container { height:220px !important; }
-  .print-header { display:block !important; text-align:center; margin-bottom:16px; border-bottom:2px solid var(--primary); padding-bottom:8px; }
+  body { background:white; font-size:9px; margin:0; padding:0; }
+  .header { padding:6px 12px; break-after:avoid; }
+  .header h1 { font-size:13px; }
+  .nav, .filters, .btn, .btn-pdf, #tab-import, #tab-config, .no-print, .data-range-bar, #searchBox { display:none !important; }
+
+  /* Show all analysis tabs */
+  .tab { display:block !important; margin-bottom:8px; }
+  .tab h2 { display:block !important; font-size:13px; border-bottom:2px solid var(--primary); padding-bottom:3px; margin-bottom:6px; page-break-after:avoid; }
+
+  /* Resumen Ejecutivo goes first and gets its own page */
+  #tab-resumen { page-break-after:always; }
+
+  /* Cards and content */
+  .card { box-shadow:none; border:1px solid #ddd; padding:8px; margin-bottom:8px; page-break-inside:avoid; }
+  .kpi { box-shadow:none; border:1px solid #ddd; padding:8px; }
+  .kpi .value { font-size:16px; }
+  .kpi .label { font-size:9px; }
+  .kpi .sub { font-size:9px; }
+  .kpi-grid { gap:6px; }
+
+  /* Charts - hide canvas, show data tables */
+  canvas { display:none !important; }
+  .chart-container { display:none !important; }
   .print-data-table { display:block !important; }
-  .print-data-table table { margin-top:6px; }
-  .print-data-table h4 { font-size:11px; color:var(--primary); margin-bottom:4px; }
+  .print-data-table table { margin-top:4px; font-size:9px; }
+  .print-data-table h4 { font-size:10px; color:var(--primary); margin-bottom:3px; }
+
+  /* Chart row becomes single column for tables */
+  .chart-row { display:block; }
+  .chart-row .card { margin-bottom:8px; }
+
+  /* Legends */
+  .legend-box { break-inside:avoid; margin-bottom:6px; font-size:9px; }
+  .legend-box .legend-content { display:block !important; }
+  .legend-box summary { font-size:10px; }
+
+  /* Alerts */
+  .alert { break-inside:avoid; padding:6px 8px; margin-bottom:6px; font-size:9px; }
+  .alert .alert-text strong { font-size:10px; }
+  .alert .alert-text span { font-size:9px; }
+
+  /* Tables */
+  table { font-size:9px; }
+  th { font-size:8px; padding:4px 6px; }
+  td { padding:3px 6px; }
+  .table-wrap { max-height:none !important; overflow:visible !important; border:none; }
+
+  /* Tags */
+  .tag { font-size:8px; padding:1px 5px; }
+
+  /* Print header */
+  .print-header { display:block !important; text-align:center; margin-bottom:12px; border-bottom:2px solid var(--primary); padding-bottom:8px; }
+
+  /* Resumen ejecutivo print styles */
+  .resumen-section { page-break-inside:avoid; margin-bottom:10px; }
+  .resumen-grid { gap:6px; }
+  .resumen-metric { padding:8px; }
+  .resumen-metric .metric-value { font-size:20px; }
+  .resumen-metric .metric-label { font-size:9px; }
+  .resumen-metric .metric-detail { font-size:8px; }
+
+  /* Page breaks for major sections */
+  #tab-bien { page-break-before:always; }
+  #tab-producto { page-break-before:always; }
+  #tab-problema { page-break-before:always; }
+  #tab-cruce { page-break-before:always; }
+  #tab-comparar { page-break-before:always; }
+  #tab-listado { page-break-before:always; }
+
+  /* Hide BIEN list table in print (too long) */
+  #tab-bien .table-wrap { display:none; }
+
+  /* Prevent overflow */
+  .content { padding:6px; max-width:100%; }
+
+  /* Eliminar headers/footers del navegador (ruta archivo y numero pagina) */
+  @page { margin: 0; size: A4; }
+  html { margin: 0 !important; padding: 0 !important; }
+  body { margin: 12mm 10mm !important; padding: 0 !important; }
 }
 .print-header { display:none; }
 .print-data-table { display:none; }
@@ -194,6 +254,38 @@ tr:nth-child(even) { background:#FAFBFC; }
 }
 .import-history .entry .date { color:var(--muted); min-width:90px; }
 .import-history .entry .count { font-weight:700; color:var(--success); }
+
+/* Resumen Ejecutivo */
+.resumen-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:16px; }
+.resumen-metric {
+  background:var(--card); border-radius:12px; padding:16px; text-align:center;
+  box-shadow:0 2px 12px rgba(0,0,0,0.08); border-top:4px solid var(--primary);
+  transition:transform 0.2s;
+}
+.resumen-metric:hover { transform:translateY(-2px); }
+.resumen-metric.prod { border-top-color:var(--danger); }
+.resumen-metric.sales { border-top-color:var(--success); }
+.resumen-metric.ceo { border-top-color:var(--accent); }
+.resumen-metric .metric-icon { font-size:24px; margin-bottom:4px; }
+.resumen-metric .metric-value { font-size:28px; font-weight:800; color:var(--primary); }
+.resumen-metric .metric-label { font-size:11px; text-transform:uppercase; color:var(--muted); font-weight:600; letter-spacing:0.5px; margin-top:2px; }
+.resumen-metric .metric-detail { font-size:11px; color:#555; margin-top:4px; }
+.resumen-section { margin-bottom:20px; }
+.resumen-section h3 { font-size:15px; color:var(--primary); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.resumen-section h3 .section-badge { font-size:10px; background:var(--primary); color:white; padding:2px 8px; border-radius:10px; }
+.action-card {
+  background:white; border-radius:10px; padding:14px; margin-bottom:8px;
+  border-left:4px solid var(--primary); box-shadow:0 1px 6px rgba(0,0,0,0.06);
+}
+.action-card.urgent { border-left-color:var(--danger); }
+.action-card.warning { border-left-color:var(--warning); }
+.action-card.info { border-left-color:var(--info); }
+.action-card .action-title { font-weight:700; font-size:13px; margin-bottom:4px; }
+.action-card .action-detail { font-size:11px; color:#555; line-height:1.5; }
+.action-card .action-tag { display:inline-block; font-size:9px; padding:2px 6px; border-radius:8px; font-weight:600; margin-right:4px; }
+.action-card .tag-prod { background:#FDE8EA; color:var(--danger); }
+.action-card .tag-sales { background:#D4EDDA; color:#155724; }
+.action-card .tag-ceo { background:#F0E6FF; color:var(--accent); }
 </style>
 </head>
 <body>
@@ -201,7 +293,7 @@ tr:nth-child(even) { background:#FAFBFC; }
 <div class="header">
   <div class="logo">
     <h1>KORFLEX - Control de Calidad</h1>
-    <span class="badge" onclick="unlockAdmin()" style="cursor:pointer" title="v8.0">v8.0</span>
+    <span class="badge" onclick="unlockAdmin()" style="cursor:pointer" title="v8.1">v8.1</span>
   </div>
   <div class="right">
     <div>Sistema de Analisis de Incidencias</div>
@@ -215,7 +307,8 @@ tr:nth-child(even) { background:#FAFBFC; }
 </div>
 
 <div class="nav no-print">
-  <button class="active" onclick="showTab('dashboard')">Dashboard</button>
+  <button class="active" onclick="showTab('resumen')">Resumen Ejecutivo</button>
+  <button onclick="showTab('dashboard')">Dashboard</button>
   <button onclick="showTab('bien')">BIEN (Sin Defecto)</button>
   <button onclick="showTab('listado')">Listado</button>
   <button onclick="showTab('producto')">Por Producto</button>
@@ -228,7 +321,7 @@ tr:nth-child(even) { background:#FAFBFC; }
 </div>
 
 <div class="print-header">
-  <h2>KORFLEX - Informe de Calidad</h2>
+  <h2>KORFLEX - Informe Ejecutivo de Calidad</h2>
   <p id="printDateRange">Periodo: -</p>
   <p>Generado: <script>document.write(new Date().toLocaleDateString('es-ES'))</script></p>
 </div>
@@ -253,8 +346,14 @@ tr:nth-child(even) { background:#FAFBFC; }
   <span id="filterDateRange" style="font-size:11px;color:var(--primary);font-weight:600;margin-left:auto"></span>
 </div>
 
+<!-- ==================== RESUMEN EJECUTIVO ==================== -->
+<div id="tab-resumen" class="tab active">
+  <h2 style="display:none">Resumen Ejecutivo</h2>
+  <div id="resumenContent"></div>
+</div>
+
 <!-- ==================== DASHBOARD ==================== -->
-<div id="tab-dashboard" class="tab active">
+<div id="tab-dashboard" class="tab">
   <h2 style="display:none">Dashboard Ejecutivo</h2>
   <details class="legend-box" open>
     <summary>Leyenda del Dashboard</summary>
@@ -646,7 +745,7 @@ function updateImportHistory() {
 // ============================================================
 // RENDERING
 // ============================================================
-function renderAll() { renderDashboard(); renderBien(); renderList(); renderProducto(); renderProblema(); renderCruce(); renderConfig(); updateImportHistory(); }
+function renderAll() { renderResumen(); renderDashboard(); renderBien(); renderList(); renderProducto(); renderProblema(); renderCruce(); renderConfig(); updateImportHistory(); }
 
 function renderChart(id, type, dataFn, extraOpts={}) {
   if (charts[id]) charts[id].destroy();
@@ -683,6 +782,259 @@ function printTable(containerId, headers, rows) {
   if (el) el.innerHTML = h;
 }
 
+
+// ============================================================
+// RESUMEN EJECUTIVO
+// ============================================================
+function renderResumen() {
+  const n = filteredData.length;
+  if (n === 0) { document.getElementById('resumenContent').innerHTML = '<p>Sin datos para el periodo seleccionado</p>'; return; }
+
+  const defects = filteredData.filter(d => !isBien(d.origen, d.clase));
+  const bienData = filteredData.filter(d => isBien(d.origen, d.clase));
+  const nDef = defects.length, nBien = bienData.length;
+  const pctDef = Math.round(nDef/n*100);
+  const pctBien = Math.round(nBien/n*100);
+
+  // Product analysis
+  const origenCnt = {};
+  filteredData.forEach(d => { origenCnt[d.origen] = (origenCnt[d.origen]||0)+1; });
+  const topOrigen = Object.entries(origenCnt).sort((a,b) => b[1]-a[1]);
+
+  // Problem analysis (defects only)
+  const probCnt = {};
+  defects.forEach(d => { const k = d.origen+'_'+d.clase; probCnt[k] = (probCnt[k]||0)+1; });
+  const topProb = Object.entries(probCnt).sort((a,b) => b[1]-a[1]);
+
+  // Pareto vital count
+  let vitalCount = 0, vitalAcc = 0;
+  for (let i = 0; i < topProb.length; i++) {
+    vitalAcc += topProb[i][1];
+    vitalCount++;
+    if (vitalAcc / nDef >= 0.8) break;
+  }
+
+  // Client analysis
+  const clientCnt = {};
+  filteredData.forEach(d => { clientCnt[d.cliente_grupo] = (clientCnt[d.cliente_grupo]||0)+1; });
+  const topClients = Object.entries(clientCnt).sort((a,b) => b[1]-a[1]);
+  const topClientPct = topClients[0] ? Math.round(topClients[0][1]/n*100) : 0;
+
+  // BIEN by client
+  const bienByClient = {};
+  bienData.forEach(d => { bienByClient[d.cliente_grupo] = (bienByClient[d.cliente_grupo]||0)+1; });
+
+  // Monthly trend for direction
+  const monthly = {};
+  filteredData.forEach(d => {
+    const m = d.fecha.slice(0,7);
+    if (!monthly[m]) monthly[m] = {total:0, def:0, bien:0};
+    monthly[m].total++;
+    if (isBien(d.origen,d.clase)) monthly[m].bien++; else monthly[m].def++;
+  });
+  const months = Object.keys(monthly).sort();
+  let trendDirection = 'ESTABLE', trendColor = 'var(--muted)', trendIcon = '&#8594;';
+  if (months.length >= 2) {
+    const last = monthly[months[months.length-1]].def;
+    const prev = monthly[months[months.length-2]].def;
+    if (last > prev * 1.15) { trendDirection = 'AL ALZA'; trendColor = 'var(--danger)'; trendIcon = '&#8593;'; }
+    else if (last < prev * 0.85) { trendDirection = 'A LA BAJA'; trendColor = 'var(--success)'; trendIcon = '&#8595;'; }
+  }
+
+  // Defect rate (defects per month avg)
+  const avgDefMonth = months.length > 0 ? Math.round(nDef / months.length) : nDef;
+
+  // Top defect label
+  let topDefLabel = '-', topDefCount = 0;
+  if (topProb[0]) {
+    const [o,c] = topProb[0][0].split('_').map(Number);
+    topDefLabel = getClaseLabel(o,c) + ' (' + getOrigenLabel(o).substring(0,12) + ')';
+    topDefCount = topProb[0][1];
+  }
+
+  // Repeat rate (same reference appearing multiple times)
+  const refCnt = {};
+  filteredData.forEach(d => { refCnt[d.referencia] = (refCnt[d.referencia]||0)+1; });
+  const repeatRefs = Object.values(refCnt).filter(v => v > 1).length;
+
+  // Concentration risk - top 2 clients %
+  const top2Pct = topClients.slice(0,2).reduce((s,c) => s + c[1], 0);
+  const top2PctVal = Math.round(top2Pct/n*100);
+
+  let html = '';
+
+  // ===== HEADER METRICS =====
+  html += '<div class="resumen-grid">';
+  html += `<div class="resumen-metric prod">
+    <div class="metric-icon">&#9888;</div>
+    <div class="metric-value">${nDef}</div>
+    <div class="metric-label">Defectos Reales</div>
+    <div class="metric-detail">${pctDef}% del total | Media ${avgDefMonth}/mes</div>
+  </div>`;
+  html += `<div class="resumen-metric sales">
+    <div class="metric-icon">&#8635;</div>
+    <div class="metric-value">${nBien}</div>
+    <div class="metric-label">Devoluciones Sin Defecto</div>
+    <div class="metric-detail">${pctBien}% del total (BIEN)</div>
+  </div>`;
+  html += `<div class="resumen-metric ceo">
+    <div class="metric-icon">${trendIcon}</div>
+    <div class="metric-value" style="color:${trendColor}">${trendDirection}</div>
+    <div class="metric-label">Tendencia Defectos</div>
+    <div class="metric-detail">${months.length >= 2 ? months[months.length-2]+' vs '+months[months.length-1] : 'Periodo insuficiente'}</div>
+  </div>`;
+  html += `<div class="resumen-metric">
+    <div class="metric-icon">&#127919;</div>
+    <div class="metric-value">${vitalCount}</div>
+    <div class="metric-label">Problemas Vitales (80%)</div>
+    <div class="metric-detail">Resolver estos elimina el 80% de defectos</div>
+  </div>`;
+  html += '</div>';
+
+  // ===== PRODUCCION =====
+  html += '<div class="resumen-section">';
+  html += '<h3>&#9881; Produccion <span class="section-badge">Calidad</span></h3>';
+
+  html += '<div class="resumen-grid" style="grid-template-columns:repeat(auto-fit, minmax(160px, 1fr))">';
+  html += `<div class="resumen-metric prod">
+    <div class="metric-value" style="font-size:22px">${topDefLabel}</div>
+    <div class="metric-label">Defecto #1</div>
+    <div class="metric-detail">${topDefCount} casos (${nDef>0?Math.round(topDefCount/nDef*100):0}% de defectos)</div>
+  </div>`;
+  const topProduct = topOrigen[0] ? getOrigenLabel(Number(topOrigen[0][0])) : '-';
+  const topProductCnt = topOrigen[0] ? topOrigen[0][1] : 0;
+  html += `<div class="resumen-metric prod">
+    <div class="metric-value" style="font-size:22px">${topProduct}</div>
+    <div class="metric-label">Producto Mas Afectado</div>
+    <div class="metric-detail">${topProductCnt} incidencias (${Math.round(topProductCnt/n*100)}%)</div>
+  </div>`;
+  html += `<div class="resumen-metric prod">
+    <div class="metric-value" style="font-size:22px">${repeatRefs}</div>
+    <div class="metric-label">Pedidos Recurrentes</div>
+    <div class="metric-detail">Mismo pedido con multiples incidencias</div>
+  </div>`;
+  html += '</div>';
+
+  // Production action cards
+  html += '<div class="action-card urgent">';
+  html += `<div class="action-title"><span class="action-tag tag-prod">PRODUCCION</span> Prioridad: Resolver los ${vitalCount} problemas vitales</div>`;
+  html += '<div class="action-detail">';
+  const vitalProbs = topProb.slice(0, Math.min(vitalCount, 5));
+  vitalProbs.forEach(([key, cnt], i) => {
+    const [o,c] = key.split('_').map(Number);
+    html += `${i+1}. <strong>${getClaseLabel(o,c)}</strong> en ${getOrigenLabel(o)}: ${cnt} casos<br>`;
+  });
+  html += '</div></div>';
+
+  // Product breakdown mini-table
+  html += '<div class="action-card info">';
+  html += '<div class="action-title"><span class="action-tag tag-prod">PRODUCCION</span> Desglose por Producto</div>';
+  html += '<div class="action-detail"><table style="width:100%;margin-top:6px"><thead><tr><th>Producto</th><th>Total</th><th>Defectos</th><th>BIEN</th><th>%</th></tr></thead><tbody>';
+  topOrigen.forEach(([o, cnt]) => {
+    const items = filteredData.filter(d => d.origen == o);
+    const defs = items.filter(d => !isBien(d.origen,d.clase)).length;
+    const bien = cnt - defs;
+    html += `<tr><td>${getOrigenLabel(Number(o))}</td><td><strong>${cnt}</strong></td><td>${defs}</td><td>${bien}</td><td>${Math.round(cnt/n*100)}%</td></tr>`;
+  });
+  html += '</tbody></table></div></div>';
+  html += '</div>';
+
+  // ===== VENTAS / COMERCIAL =====
+  html += '<div class="resumen-section">';
+  html += '<h3>&#128200; Ventas y Comercial <span class="section-badge">Clientes</span></h3>';
+
+  html += '<div class="resumen-grid" style="grid-template-columns:repeat(auto-fit, minmax(160px, 1fr))">';
+  html += `<div class="resumen-metric sales">
+    <div class="metric-value" style="font-size:22px">${topClients[0] ? topClients[0][0] : '-'}</div>
+    <div class="metric-label">Cliente #1 en Incidencias</div>
+    <div class="metric-detail">${topClients[0] ? topClients[0][1]+' inc. ('+topClientPct+'%)' : ''}</div>
+  </div>`;
+  html += `<div class="resumen-metric sales">
+    <div class="metric-value" style="font-size:22px">${top2PctVal}%</div>
+    <div class="metric-label">Concentracion Top 2</div>
+    <div class="metric-detail">${topClients.slice(0,2).map(c=>c[0]).join(' + ')}</div>
+  </div>`;
+  html += `<div class="resumen-metric sales">
+    <div class="metric-value" style="font-size:22px">${Object.keys(clientCnt).length}</div>
+    <div class="metric-label">Clientes Afectados</div>
+    <div class="metric-detail">De un total de ${Object.keys(clientCnt).length} clientes en el periodo</div>
+  </div>`;
+  html += '</div>';
+
+  // Sales action cards
+  if (top2PctVal >= 60) {
+    html += '<div class="action-card urgent"><div class="action-title"><span class="action-tag tag-sales">VENTAS</span> ALERTA: Alta concentracion de incidencias</div>';
+    html += `<div class="action-detail">Los 2 principales clientes representan el <strong>${top2PctVal}%</strong> de incidencias. Esto indica riesgo de relacion comercial. Accion: Reunion urgente con los representantes asignados.</div></div>`;
+  }
+
+  // BIEN by client table
+  if (nBien > 0) {
+    html += '<div class="action-card warning"><div class="action-title"><span class="action-tag tag-sales">VENTAS</span> Devoluciones sin defecto por cliente (accion comercial)</div>';
+    html += '<div class="action-detail"><table style="width:100%;margin-top:6px"><thead><tr><th>Cliente</th><th>BIEN</th><th>Total</th><th>% BIEN</th><th>Accion</th></tr></thead><tbody>';
+    topClients.forEach(([cl, total]) => {
+      const bienCnt = bienByClient[cl] || 0;
+      if (bienCnt === 0) return;
+      const pct = Math.round(bienCnt/total*100);
+      let action = 'Monitorizar';
+      if (pct >= 50 && bienCnt >= 2) action = '<strong style="color:var(--danger)">Reunion comercial urgente</strong>';
+      else if (pct >= 30) action = 'Revisar comunicacion';
+      html += `<tr><td>${cl}</td><td><strong>${bienCnt}</strong></td><td>${total}</td><td>${pct}%</td><td>${action}</td></tr>`;
+    });
+    html += '</tbody></table></div></div>';
+  }
+  html += '</div>';
+
+  // ===== CEO / DIRECCION =====
+  html += '<div class="resumen-section">';
+  html += '<h3>&#127942; Direccion <span class="section-badge">CEO</span></h3>';
+
+  // Monthly summary table
+  html += '<div class="action-card info"><div class="action-title"><span class="action-tag tag-ceo">CEO</span> Evolucion Mensual</div>';
+  html += '<div class="action-detail"><table style="width:100%;margin-top:6px"><thead><tr><th>Mes</th><th>Total</th><th>Defectos</th><th>BIEN</th><th>Tasa Defecto</th></tr></thead><tbody>';
+  months.forEach(m => {
+    const v = monthly[m];
+    const rate = v.total > 0 ? Math.round(v.def/v.total*100) : 0;
+    html += `<tr><td><strong>${m}</strong></td><td>${v.total}</td><td>${v.def}</td><td>${v.bien}</td><td>${rate}%</td></tr>`;
+  });
+  html += '</tbody></table></div></div>';
+
+  // Key risks
+  html += '<div class="action-card urgent"><div class="action-title"><span class="action-tag tag-ceo">CEO</span> Riesgos Clave</div>';
+  html += '<div class="action-detail">';
+  let riskCount = 0;
+  if (topClientPct >= 40) { html += `&#9679; <strong>Dependencia de cliente:</strong> ${topClients[0][0]} concentra ${topClientPct}% de incidencias<br>`; riskCount++; }
+  if (topProb[0] && topProb[0][1] >= nDef * 0.25) {
+    const [o,c] = topProb[0][0].split('_').map(Number);
+    html += `&#9679; <strong>Defecto dominante:</strong> ${getClaseLabel(o,c)} representa ${Math.round(topProb[0][1]/nDef*100)}% de defectos<br>`;
+    riskCount++;
+  }
+  if (nBien >= 3) { html += `&#9679; <strong>Ineficiencia comercial:</strong> ${nBien} devoluciones sin defecto real (${pctBien}% del total)<br>`; riskCount++; }
+  if (trendDirection === 'AL ALZA') { html += '&#9679; <strong>Tendencia negativa:</strong> Los defectos estan aumentando respecto al mes anterior<br>'; riskCount++; }
+  if (riskCount === 0) html += '&#9679; No se detectan riesgos criticos en el periodo analizado';
+  html += '</div></div>';
+
+  // Recommendations
+  html += '<div class="action-card"><div class="action-title"><span class="action-tag tag-ceo">CEO</span> Acciones Recomendadas</div>';
+  html += '<div class="action-detail">';
+  html += '<strong>Corto plazo (1-2 semanas):</strong><br>';
+  if (topProb[0]) {
+    const [o,c] = topProb[0][0].split('_').map(Number);
+    html += `1. Investigar causa raiz de "${getClaseLabel(o,c)}" en ${getOrigenLabel(o)} (${topProb[0][1]} casos)<br>`;
+  }
+  if (nBien >= 2 && Object.keys(bienByClient).length > 0) {
+    const topBienCl = Object.entries(bienByClient).sort((a,b)=>b[1]-a[1])[0];
+    html += `2. Reunion con ${topBienCl[0]} sobre devoluciones sin defecto (${topBienCl[1]} casos)<br>`;
+  }
+  html += '<br><strong>Medio plazo (1-3 meses):</strong><br>';
+  html += `3. Plan de mejora para los ${vitalCount} problemas vitales (Pareto 80%)<br>`;
+  if (top2PctVal >= 50) html += '4. Diversificar base de clientes para reducir riesgo de concentracion<br>';
+  html += '</div></div>';
+
+  html += '</div>';
+
+  document.getElementById('resumenContent').innerHTML = html;
+}
+
 // ============================================================
 // DASHBOARD
 // ============================================================
@@ -692,7 +1044,7 @@ function renderDashboard() {
   const defects = filteredData.filter(d => !isBien(d.origen, d.clase));
   const bienData = filteredData.filter(d => isBien(d.origen, d.clase));
   const nDef = defects.length, nBien = bienData.length;
-  // Costs removed in v8.0
+  // Costs removed in v8.1
 
   const origenCnt = {};
   filteredData.forEach(d => { origenCnt[d.origen] = (origenCnt[d.origen]||0)+1; });
@@ -782,7 +1134,7 @@ function renderDashboard() {
     return { labels:sorted.map(s=>s[0]), datasets:[{data:sorted.map(s=>s[1]), backgroundColor:CC}] };
   });
 
-  // Cost chart removed in v8.0
+  // Cost chart removed in v8.1
 }
 
 // ============================================================
@@ -1143,7 +1495,7 @@ function runCompare() {
   html += cRow('Total', dA.length, dB.length);
   html += cRow('Defectos', dA.filter(d=>!isBien(d.origen,d.clase)).length, dB.filter(d=>!isBien(d.origen,d.clase)).length);
   html += cRow('BIEN', dA.filter(d=>isBien(d.origen,d.clase)).length, dB.filter(d=>isBien(d.origen,d.clase)).length);
-  // Cost row removed in v8.0
+  // Cost row removed in v8.1
   html += '</tbody></table></div>';
   document.getElementById('compareResult').innerHTML = html;
 }
@@ -1249,8 +1601,12 @@ function exportConfig() {
 
 // PDF Export
 function exportPDF() {
+  // Open all legend boxes for print
   document.querySelectorAll('.legend-box').forEach(el=>el.open=true);
-  window.print();
+  // Ensure resumen is rendered
+  renderResumen();
+  // Small delay to ensure rendering complete
+  setTimeout(() => window.print(), 200);
 }
 
 // Tabs
@@ -1272,7 +1628,7 @@ function showTab(name) {
   document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
   const tab=document.getElementById('tab-'+name);
   if (tab) tab.classList.add('active');
-  const names=['dashboard','bien','listado','producto','problema','cruce','comparar','import','config'];
+  const names=['resumen','dashboard','bien','listado','producto','problema','cruce','comparar','import','config'];
   const idx=names.indexOf(name);
   const btns=document.querySelectorAll('.nav button');
   if (idx>=0 && btns[idx]) btns[idx].classList.add('active');
@@ -1280,7 +1636,7 @@ function showTab(name) {
 
 // INIT
 loadConfig(); loadData(); populateOrigenFilter(); updateDataRangeBar();
-document.getElementById('dataInfo').textContent = allData.length+' incidencias | v8.0';
+document.getElementById('dataInfo').textContent = allData.length+' incidencias | v8.1';
 applyFilters();
 </script>
 </body>
