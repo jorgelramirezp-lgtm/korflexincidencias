@@ -109,16 +109,22 @@ body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var
 .data-range-bar .range-total { opacity:0.8; font-weight:500; }
 
 /* KPIs */
-.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:10px; margin-bottom:16px; }
-.kpi { background:var(--card); border-radius:10px; padding:14px; box-shadow:0 2px 8px rgba(0,0,0,0.06); border-left:4px solid var(--primary); }
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:12px; margin-bottom:16px; }
+.kpi { background:var(--card); border-radius:10px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.06); border-left:4px solid var(--primary); position:relative; }
 .kpi .label { font-size:10px; text-transform:uppercase; color:var(--muted); font-weight:600; letter-spacing:0.5px; }
 .kpi .value { font-size:22px; font-weight:700; color:var(--primary); margin:4px 0; }
 .kpi .sub { font-size:11px; color:var(--muted); }
+.kpi .kpi-help { font-size:11px; color:#6B7280; background:#F3F4F6; border-radius:6px; padding:6px 8px; margin-top:8px; line-height:1.4; border-left:3px solid #D1D5DB; }
 .kpi.danger { border-left-color:var(--danger); }
+.kpi.danger .kpi-help { border-left-color:var(--danger); }
 .kpi.warning { border-left-color:var(--warning); }
+.kpi.warning .kpi-help { border-left-color:var(--warning); }
 .kpi.success { border-left-color:var(--success); }
+.kpi.success .kpi-help { border-left-color:var(--success); }
 .kpi.info { border-left-color:var(--info); }
+.kpi.info .kpi-help { border-left-color:var(--info); }
 .kpi.bien { border-left-color:var(--bien); }
+.kpi.bien .kpi-help { border-left-color:var(--bien); }
 
 /* Cards */
 .card { background:var(--card); border-radius:10px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:16px; }
@@ -136,6 +142,7 @@ body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var
 .resumen-metric .metric-value { font-size:28px; font-weight:800; color:var(--primary); word-break:break-word; overflow-wrap:break-word; line-height:1.1; }
 .resumen-metric .metric-label { font-size:11px; text-transform:uppercase; color:var(--muted); font-weight:600; letter-spacing:0.5px; margin-top:2px; }
 .resumen-metric .metric-detail { font-size:11px; color:#555; margin-top:4px; }
+.resumen-metric .metric-help { font-size:10px; color:#6B7280; background:#F3F4F6; border-radius:6px; padding:5px 8px; margin-top:8px; line-height:1.3; text-align:left; }
 
 .resumen-section { margin-bottom:20px; }
 .resumen-section h3 { font-size:15px; color:var(--primary); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
@@ -247,7 +254,9 @@ tr:nth-child(even) { background:#FAFBFC; }
   .kpi .value { font-size:16px; }
   .kpi .label { font-size:9px; }
   .kpi .sub { font-size:9px; }
+  .kpi .kpi-help { font-size:8px; padding:4px 6px; margin-top:4px; }
   .kpi-grid { gap:6px; }
+  .resumen-metric .metric-help { font-size:8px; padding:3px 5px; margin-top:4px; }
 
   canvas { display:none !important; }
   .chart-container { display:none !important; }
@@ -872,10 +881,10 @@ function renderResumen() {
   const months = [...new Set(filteredData.map(d => d.fecha.slice(0,7)))].sort();
 
   let html = '<div class="resumen-grid">';
-  html += `<div class="resumen-metric"><div class="metric-icon">⚠️</div><div class="metric-value">${conDefecto}</div><div class="metric-label">Con Defecto</div><div class="metric-detail">${pctDef}% del total</div></div>`;
-  html += `<div class="resumen-metric"><div class="metric-icon">✓</div><div class="metric-value">${sinDefecto}</div><div class="metric-label">Sin Defecto</div><div class="metric-detail">${pctBien}% del total</div></div>`;
-  html += `<div class="resumen-metric"><div class="metric-icon">📦</div><div class="metric-value" style="font-size:18px;">${topFamilia ? topFamilia[0] : '-'}</div><div class="metric-label">Familia Top</div><div class="metric-detail">${topFamilia ? topFamilia[1]+' casos ('+Math.round(topFamilia[1]/n*100)+'%)' : ''}</div></div>`;
-  html += `<div class="resumen-metric"><div class="metric-icon">🔍</div><div class="metric-value" style="font-size:14px;">${topProblema ? topProblema[0] : '-'}</div><div class="metric-label">Problema Top</div><div class="metric-detail">${topProblema ? topProblema[1]+' casos' : ''}</div></div>`;
+  html += `<div class="resumen-metric"><div class="metric-icon">⚠️</div><div class="metric-value">${conDefecto}</div><div class="metric-label">Con Defecto</div><div class="metric-detail">${pctDef}% del total</div><div class="metric-help">Productos que llegaron con alg\u00fan problema o fallo. Cuanto menor sea este n\u00famero, mejor estamos trabajando.</div></div>`;
+  html += `<div class="resumen-metric"><div class="metric-icon">✓</div><div class="metric-value">${sinDefecto}</div><div class="metric-label">Sin Defecto</div><div class="metric-detail">${pctBien}% del total</div><div class="metric-help">Incidencias que se resolvieron sin que el producto tuviera un defecto real (reenv\u00edos, reparaciones menores, cancelaciones).</div></div>`;
+  html += `<div class="resumen-metric"><div class="metric-icon">📦</div><div class="metric-value" style="font-size:18px;">${topFamilia ? topFamilia[0] : '-'}</div><div class="metric-label">Familia Top</div><div class="metric-detail">${topFamilia ? topFamilia[1]+' casos ('+Math.round(topFamilia[1]/n*100)+'%)' : ''}</div><div class="metric-help">El tipo de producto que m\u00e1s incidencias acumula. Es donde debemos poner m\u00e1s atenci\u00f3n para mejorar.</div></div>`;
+  html += `<div class="resumen-metric"><div class="metric-icon">🔍</div><div class="metric-value" style="font-size:14px;">${topProblema ? topProblema[0] : '-'}</div><div class="metric-label">Problema Top</div><div class="metric-detail">${topProblema ? topProblema[1]+' casos' : ''}</div><div class="metric-help">El problema que m\u00e1s se repite. Si solucionamos este, reduciremos muchas incidencias de golpe.</div></div>`;
   html += '</div>';
 
   document.getElementById('resumenContent').innerHTML = html;
@@ -884,12 +893,38 @@ function renderResumen() {
 // ==================== RENDER DASHBOARD ====================
 function renderDashboard() {
   const n = filteredData.length;
+  const conDef = filteredData.filter(d => !isSinDefecto(d)).length;
+  const sinDef = n - conDef;
+  const pctDef = n > 0 ? Math.round(conDef/n*100) : 0;
+  const clientes = [...new Set(filteredData.map(r => r.cliente || r.descripcion))].length;
+  const familias = [...new Set(filteredData.map(r => r.familia))].length;
+  const meses = [...new Set(filteredData.map(r => r.fecha.slice(0,7)))].sort();
+  const incXmes = meses.length > 0 ? Math.round(n / meses.length) : 0;
 
   let html = `
     <div class="kpi">
       <div class="label">Total Incidencias</div>
       <div class="value">${n}</div>
-      <div class="sub">En período seleccionado</div>
+      <div class="sub">En ${meses.length} mes${meses.length!==1?'es':''}</div>
+      <div class="kpi-help">Todas las incidencias registradas en el periodo. Incluye tanto las que ten\u00edan defecto real como las que no.</div>
+    </div>
+    <div class="kpi danger">
+      <div class="label">Tasa de Defecto</div>
+      <div class="value">${pctDef}%</div>
+      <div class="sub">${conDef} de ${n} incidencias</div>
+      <div class="kpi-help">De cada 100 incidencias, ${pctDef} tienen un defecto real. Cuanto m\u00e1s bajo sea este %, mejor es nuestra calidad.</div>
+    </div>
+    <div class="kpi info">
+      <div class="label">Promedio Mensual</div>
+      <div class="value">${incXmes}</div>
+      <div class="sub">incidencias/mes</div>
+      <div class="kpi-help">Cu\u00e1ntas incidencias recibimos de media cada mes. Nos ayuda a ver si el volumen sube o baja con el tiempo.</div>
+    </div>
+    <div class="kpi warning">
+      <div class="label">Familias Afectadas</div>
+      <div class="value">${familias}</div>
+      <div class="sub">tipos de producto</div>
+      <div class="kpi-help">Cu\u00e1ntos tipos de producto diferentes tienen incidencias. Si son pocos, el problema est\u00e1 concentrado y es m\u00e1s f\u00e1cil de resolver.</div>
     </div>
   `;
   document.getElementById('dashboardKPIs').innerHTML = html;
@@ -975,11 +1010,20 @@ function renderBien() {
   const bienData = filteredData.filter(d => isSinDefecto(d));
   const n = bienData.length;
 
+  const pctBien = filteredData.length > 0 ? Math.round(n/filteredData.length*100) : 0;
+  const catsBien = [...new Set(bienData.map(r => r.problema))].length;
   document.getElementById('bienKPIs').innerHTML = `
     <div class="kpi bien">
       <div class="label">Total Sin Defecto</div>
       <div class="value">${n}</div>
-      <div class="sub">${Math.round(n/filteredData.length*100)}% del total</div>
+      <div class="sub">${pctBien}% del total de incidencias</div>
+      <div class="kpi-help">Incidencias donde el producto NO ten\u00eda un defecto real. Son reenv\u00edos, reparaciones menores, cancelaciones, etc. No representan un fallo de calidad.</div>
+    </div>
+    <div class="kpi success">
+      <div class="label">Categor\u00edas Sin Defecto</div>
+      <div class="value">${catsBien}</div>
+      <div class="sub">tipos diferentes</div>
+      <div class="kpi-help">Cu\u00e1ntas razones distintas hay por las que una incidencia se clasifica como "sin defecto". Ayuda a entender qu\u00e9 tipo de gestiones no son fallos reales.</div>
     </div>
   `;
 
@@ -1074,10 +1118,27 @@ function renderProducto() {
 
   const familiaTop = Object.entries(familiaCount).sort((a,b) => b[1]-a[1]);
 
+  const topFam = familiaTop[0];
+  const topFamPct = topFam ? Math.round(topFam[1]/filteredData.length*100) : 0;
+  const topFamDef = topFam && familiaProbs[topFam[0]] ? Math.round(familiaProbs[topFam[0]].def / (familiaProbs[topFam[0]].def + familiaProbs[topFam[0]].bien) * 100) : 0;
   document.getElementById('productoKPIs').innerHTML = `
     <div class="kpi">
       <div class="label">Familias Analizadas</div>
       <div class="value">${familiaTop.length}</div>
+      <div class="sub">tipos de producto</div>
+      <div class="kpi-help">Cu\u00e1ntos tipos de producto diferentes aparecen en las incidencias (colchones, canap\u00e9s, bases, etc.).</div>
+    </div>
+    <div class="kpi danger">
+      <div class="label">Familia con M\u00e1s Incidencias</div>
+      <div class="value" style="font-size:16px;">${topFam ? topFam[0] : '-'}</div>
+      <div class="sub">${topFam ? topFam[1]+' casos ('+topFamPct+'% del total)' : ''}</div>
+      <div class="kpi-help">El producto que m\u00e1s problemas genera. Concentrando esfuerzos aqu\u00ed se consigue la mayor mejora.</div>
+    </div>
+    <div class="kpi warning">
+      <div class="label">Tasa Defecto Familia Top</div>
+      <div class="value">${topFamDef}%</div>
+      <div class="sub">de ${topFam ? topFam[0] : '-'}</div>
+      <div class="kpi-help">De cada 100 incidencias de esta familia, cu\u00e1ntas tienen un defecto real. Si es alto, hay un problema de calidad serio en este producto.</div>
     </div>
   `;
 
@@ -1121,11 +1182,27 @@ function renderProblema() {
   const problemaTop = Object.entries(problemaCount).sort((a,b) => b[1]-a[1]);
   const totalDef = problemaTop.reduce((s, x) => s + x[1], 0);
 
+  const topProb = problemaTop[0];
+  const top3Sum = problemaTop.slice(0,3).reduce((s,x) => s+x[1], 0);
+  const top3Pct = totalDef > 0 ? Math.round(top3Sum/totalDef*100) : 0;
   document.getElementById('problemaKPIs').innerHTML = `
     <div class="kpi danger">
       <div class="label">Problemas Identificados</div>
       <div class="value">${problemaTop.length}</div>
-      <div class="sub">Tipos diferentes</div>
+      <div class="sub">tipos diferentes</div>
+      <div class="kpi-help">Cu\u00e1ntos problemas distintos se han detectado. Si son pocos tipos pero muchos casos, es m\u00e1s f\u00e1cil de solucionar.</div>
+    </div>
+    <div class="kpi warning">
+      <div class="label">Problema #1</div>
+      <div class="value" style="font-size:14px;">${topProb ? topProb[0] : '-'}</div>
+      <div class="sub">${topProb ? topProb[1]+' casos' : ''}</div>
+      <div class="kpi-help">El problema que m\u00e1s veces se repite. Si logramos eliminarlo, reduciremos una gran parte de las incidencias.</div>
+    </div>
+    <div class="kpi info">
+      <div class="label">Concentraci\u00f3n Top 3</div>
+      <div class="value">${top3Pct}%</div>
+      <div class="sub">${top3Sum} de ${totalDef} casos</div>
+      <div class="kpi-help">Qu\u00e9 porcentaje de todas las incidencias se explica con solo los 3 problemas m\u00e1s frecuentes. Si es alto, resolver esos 3 temas mejorar\u00e1 mucho la situaci\u00f3n.</div>
     </div>
   `;
 
