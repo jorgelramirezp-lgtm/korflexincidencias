@@ -1023,6 +1023,7 @@ const CC = ['#1B3A5C','#DC3545','#F0AD4E','#28A745','#17A2B8','#6F42C1','#E83E8C
 let charts = {};
 
 function renderAll() {
+  clearAllCharts();
   renderResumen();
   renderDashboard();
   renderBien();
@@ -1502,6 +1503,15 @@ function renderComparacion() {
 }
 
 // ==================== CHART HELPER ====================
+function clearAllCharts() {
+  Object.keys(charts).forEach(id => {
+    if (charts[id]) {
+      charts[id].destroy();
+      delete charts[id];
+    }
+  });
+}
+
 function renderChart(id, type, dataFn) {
   if (charts[id]) charts[id].destroy();
   const ctx = document.getElementById(id);
