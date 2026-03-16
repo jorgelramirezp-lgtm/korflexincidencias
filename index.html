@@ -40,7 +40,7 @@ body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var
 .header h1 { font-size:16px; font-weight:700; }
 .header .logo { display:flex; align-items:center; gap:8px; }
 .header .badge { background:var(--success); font-size:10px; padding:3px 8px; border-radius:10px; font-weight:600; }
-.header .right { font-size:11px; opacity:0.7; text-align:right; }
+.header .right { font-size:11px; opacity:0.7; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:50%; }
 
 /* Group Filter - MOST IMPORTANT */
 .group-filter {
@@ -133,7 +133,7 @@ body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var
 }
 .resumen-metric:hover { transform:translateY(-2px); }
 .resumen-metric .metric-icon { font-size:24px; margin-bottom:4px; }
-.resumen-metric .metric-value { font-size:28px; font-weight:800; color:var(--primary); }
+.resumen-metric .metric-value { font-size:28px; font-weight:800; color:var(--primary); word-break:break-word; overflow-wrap:break-word; line-height:1.1; }
 .resumen-metric .metric-label { font-size:11px; text-transform:uppercase; color:var(--muted); font-weight:600; letter-spacing:0.5px; margin-top:2px; }
 .resumen-metric .metric-detail { font-size:11px; color:#555; margin-top:4px; }
 
@@ -587,7 +587,7 @@ tr:nth-child(even) { background:#FAFBFC; }
 
 <script>
 // ==================== CONSTANTS & CONFIG ====================
-const STORAGE_KEY = 'korflex_unified_incidents';
+const STORAGE_KEY = 'korflex_unified_incidents_v2';
 const BIEN_CATEGORIES_KORAL = [
   'REEMBALAJE/REENVÍO',
   'EXPOSITOR (LIMPIAR/REPARAR)',
@@ -709,11 +709,11 @@ function loadData() {
     if (s) {
       allData = JSON.parse(s);
     } else {
-      allData = DEFAULT_DATA.map(r => ({...r, grupo: 'KORAL'}));
+      allData = DEFAULT_DATA.map(r => ({...r}));
       saveData();
     }
   } catch(e) {
-    allData = DEFAULT_DATA.map(r => ({...r, grupo: 'KORAL'}));
+    allData = DEFAULT_DATA.map(r => ({...r}));
   }
   updateDataCounts();
   filterData();
@@ -874,8 +874,8 @@ function renderResumen() {
   let html = '<div class="resumen-grid">';
   html += `<div class="resumen-metric"><div class="metric-icon">⚠️</div><div class="metric-value">${conDefecto}</div><div class="metric-label">Con Defecto</div><div class="metric-detail">${pctDef}% del total</div></div>`;
   html += `<div class="resumen-metric"><div class="metric-icon">✓</div><div class="metric-value">${sinDefecto}</div><div class="metric-label">Sin Defecto</div><div class="metric-detail">${pctBien}% del total</div></div>`;
-  html += `<div class="resumen-metric"><div class="metric-icon">📦</div><div class="metric-value">${topFamilia ? topFamilia[0] : '-'}</div><div class="metric-label">Familia Top</div><div class="metric-detail">${topFamilia ? topFamilia[1]+' casos ('+Math.round(topFamilia[1]/n*100)+'%)' : ''}</div></div>`;
-  html += `<div class="resumen-metric"><div class="metric-icon">🔍</div><div class="metric-value">${topProblema ? topProblema[0].substring(0,20) : '-'}</div><div class="metric-label">Problema Top</div><div class="metric-detail">${topProblema ? topProblema[1]+' casos' : ''}</div></div>`;
+  html += `<div class="resumen-metric"><div class="metric-icon">📦</div><div class="metric-value" style="font-size:18px;">${topFamilia ? topFamilia[0] : '-'}</div><div class="metric-label">Familia Top</div><div class="metric-detail">${topFamilia ? topFamilia[1]+' casos ('+Math.round(topFamilia[1]/n*100)+'%)' : ''}</div></div>`;
+  html += `<div class="resumen-metric"><div class="metric-icon">🔍</div><div class="metric-value" style="font-size:14px;">${topProblema ? topProblema[0] : '-'}</div><div class="metric-label">Problema Top</div><div class="metric-detail">${topProblema ? topProblema[1]+' casos' : ''}</div></div>`;
   html += '</div>';
 
   document.getElementById('resumenContent').innerHTML = html;
