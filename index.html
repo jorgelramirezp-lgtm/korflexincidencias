@@ -203,6 +203,34 @@ body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var
 .action-detail td { padding:4px 6px; border-bottom:1px solid var(--border); font-size:10px; }
 .action-detail tr:hover { background:#FAFBFC; }
 
+/* Cruce Cards */
+.cruce-legend { background:#F8F9FA; border-radius:8px; padding:12px 16px; margin-bottom:12px; }
+.cruce-legend strong { font-size:13px; color:var(--primary); display:block; margin-bottom:6px; }
+.cruce-legend p { font-size:11px; color:#555; margin:0; line-height:1.5; }
+.cruce-pill-sample { padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600; }
+.cruce-pill-sample.def { background:#F8D7DA; color:#721C24; }
+.cruce-pill-sample.bien { background:#D1ECF1; color:#0C5460; }
+
+.cruce-card {
+  background:var(--card); border-radius:10px; padding:16px; margin-bottom:12px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06); border-left:4px solid var(--primary);
+}
+.cruce-card-title {
+  font-size:15px; font-weight:800; color:var(--primary); margin-bottom:10px;
+}
+.cruce-card-title span { font-weight:400; font-size:13px; color:var(--muted); }
+.cruce-pills { display:flex; flex-wrap:wrap; gap:8px; }
+.cruce-pill {
+  border-radius:8px; padding:8px 14px; text-align:center; min-width:80px;
+  transition:transform 0.15s;
+}
+.cruce-pill:hover { transform:scale(1.05); }
+.cruce-pill .pill-count { font-size:20px; font-weight:800; display:block; line-height:1.2; }
+.cruce-pill .pill-label { font-size:9px; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; display:block; margin-top:2px; }
+.cruce-pill.def { background:#F8D7DA; color:#721C24; }
+.cruce-pill.def-high { background:#DC3545; color:white; }
+.cruce-pill.bien { background:#D1ECF1; color:#0C5460; }
+
 /* Legend */
 .legend-box { background:#F8F9FC; border:1px solid var(--border); border-radius:8px; margin-bottom:12px; font-size:12px; color:#555; }
 .legend-box summary { padding:8px 12px; cursor:pointer; font-weight:600; color:var(--primary); list-style:none; }
@@ -571,16 +599,14 @@ tr:nth-child(even) { background:#FAFBFC; }
 
 <!-- TAB: CRUCE -->
 <div id="tab-cruce" class="tab">
-  <h2>Matriz de Cruce: Familia × Problema</h2>
+  <h2>Cruce Producto × Problema</h2>
   <div class="card">
-    <h3>Heatmap</h3>
-    <div class="table-wrap">
-      <table id="tablaCruce" style="font-size:11px;">
-        <thead><tr><th>Familia \ Problema</th><th colspan="20">Problemas</th></tr></thead>
-        <tbody id="cruceBody"></tbody>
-      </table>
+    <div class="cruce-legend">
+      <strong>Info Leyenda - Cruce</strong>
+      <p>Cada producto con sus problemas específicos. Los colores indican la gravedad: <span class="cruce-pill-sample def">rojo/rosa = defectos</span>, <span class="cruce-pill-sample bien">azul = sin defecto</span>. El tamaño del número indica la cantidad de casos.</p>
     </div>
   </div>
+  <div id="cruceCards"></div>
 </div>
 
 <!-- TAB: COMPARACION -->
@@ -1432,21 +1458,50 @@ function renderProblema() {
 
 // ==================== RENDER CRUCE ====================
 function renderCruce() {
-  const familias = [...new Set(filteredData.map(r => r.familia))].sort();
-  const problemas = [...new Set(filteredData.map(r => r.problema))].sort().slice(0,20);
-
-  let html = '<tbody>';
-  familias.forEach(f => {
-    html += `<tr><td><strong>${f}</strong></td>`;
-    problemas.forEach(p => {
-      const cnt = filteredData.filter(r => r.familia === f && r.problema === p).length;
-      const color = cnt === 0 ? '' : `style="background:rgba(220,53,69,${Math.min(cnt/10,1)});color:white;font-weight:700;"`;
-      html += `<td ${color}>${cnt > 0 ? cnt : ''}</td>`;
-    });
-    html += '</tr>';
+  // Group data by familia
+  const familiaMap = {};
+  filteredData.forEach(r => {
+    if (!familiaMap[r.familia]) familiaMap[r.familia] = {};
+    if (!familiaMap[r.familia][r.problema]) familiaMap[r.familia][r.problema] = 0;
+    familiaMap[r.familia][r.problema]++;
   });
-  html += '</tbody>';
-  document.getElementById('cruceBody').innerHTML = html;
+
+  // Sort familias by total count descending
+  const familias = Object.entries(familiaMap)
+    .map(([fam, probs]) => ({
+      nombre: fam,
+      total: Object.values(probs).reduce((s,v) => s+v, 0),
+      problemas: Object.entries(probs).sort((a,b) => b[1]-a[1])
+    }))
+    .sort((a,b) => b.total - a.total);
+
+  let html = '';
+  familias.forEach(fam => {
+    html += `<div class="cruce-card">`;
+    html += `<div class="cruce-card-title">${fam.nombre} <span>- ${fam.total} incidencia${fam.total!==1?'s':''}</span></div>`;
+    html += `<div class="cruce-pills">`;
+    fam.problemas.forEach(([prob, cnt]) => {
+      const esBien = isSinDefecto({grupo: filteredData.find(r => r.familia === fam.nombre)?.grupo || '', problema: prob, familia: fam.nombre});
+      let pillClass = 'def';
+      if (esBien) {
+        pillClass = 'bien';
+      } else if (cnt >= 8) {
+        pillClass = 'def-high';
+      }
+      const label = esBien ? prob + ' (BIEN)' : prob;
+      html += `<div class="cruce-pill ${pillClass}">`;
+      html += `<span class="pill-count">${cnt}</span>`;
+      html += `<span class="pill-label">${label}</span>`;
+      html += `</div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  if (html === '') {
+    html = '<div class="card"><p style="padding:20px;color:var(--muted);text-align:center;">Sin datos para mostrar</p></div>';
+  }
+
+  document.getElementById('cruceCards').innerHTML = html;
 }
 
 // ==================== RENDER COMPARACION ====================
