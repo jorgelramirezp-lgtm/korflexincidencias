@@ -231,6 +231,29 @@ body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var
 .cruce-pill.def-high { background:#DC3545; color:white; }
 .cruce-pill.bien { background:#D1ECF1; color:#0C5460; }
 
+.cruce-detail-btn {
+  background:none; border:1px solid var(--primary); color:var(--primary);
+  padding:3px 10px; border-radius:12px; font-size:10px; font-weight:600;
+  cursor:pointer; margin-left:8px; transition:all 0.2s;
+}
+.cruce-detail-btn:hover { background:var(--primary); color:white; }
+
+.cruce-detail {
+  margin-top:12px; border-top:1px solid var(--border); padding-top:12px;
+}
+.cruce-detail-table {
+  width:100%; border-collapse:collapse; font-size:11px;
+}
+.cruce-detail-table th {
+  background:var(--primary); color:white; padding:6px 8px; text-align:left;
+  font-size:10px; font-weight:600;
+}
+.cruce-detail-table td {
+  padding:5px 8px; border-bottom:1px solid var(--border); vertical-align:top;
+}
+.cruce-detail-table tr:hover { background:#F8F9FA; }
+.cruce-detail-table tr:nth-child(even) { background:#FAFBFC; }
+
 /* Legend */
 .legend-box { background:#F8F9FC; border:1px solid var(--border); border-radius:8px; margin-bottom:12px; font-size:12px; color:#555; }
 .legend-box summary { padding:8px 12px; cursor:pointer; font-weight:600; color:var(--primary); list-style:none; }
@@ -1457,44 +1480,92 @@ function renderProblema() {
 }
 
 // ==================== RENDER CRUCE ====================
+let cruceDetailId = 0;
+
 function renderCruce() {
-  // Group data by familia
+  cruceDetailId = 0;
+  // Group data by familia, keeping full records
   const familiaMap = {};
   filteredData.forEach(r => {
-    if (!familiaMap[r.familia]) familiaMap[r.familia] = {};
-    if (!familiaMap[r.familia][r.problema]) familiaMap[r.familia][r.problema] = 0;
-    familiaMap[r.familia][r.problema]++;
+    if (!familiaMap[r.familia]) familiaMap[r.familia] = [];
+    familiaMap[r.familia].push(r);
   });
 
   // Sort familias by total count descending
   const familias = Object.entries(familiaMap)
-    .map(([fam, probs]) => ({
-      nombre: fam,
-      total: Object.values(probs).reduce((s,v) => s+v, 0),
-      problemas: Object.entries(probs).sort((a,b) => b[1]-a[1])
-    }))
+    .map(([fam, records]) => {
+      const probMap = {};
+      records.forEach(r => {
+        if (!probMap[r.problema]) probMap[r.problema] = [];
+        probMap[r.problema].push(r);
+      });
+      return {
+        nombre: fam,
+        total: records.length,
+        problemas: Object.entries(probMap).sort((a,b) => b[1].length - a[1].length)
+      };
+    })
     .sort((a,b) => b.total - a.total);
 
   let html = '';
   familias.forEach(fam => {
+    const detId = 'cruceDetail_' + (cruceDetailId++);
     html += `<div class="cruce-card">`;
-    html += `<div class="cruce-card-title">${fam.nombre} <span>- ${fam.total} incidencia${fam.total!==1?'s':''}</span></div>`;
+    html += `<div class="cruce-card-title">${fam.nombre} <span>- ${fam.total} incidencia${fam.total!==1?'s':''}</span>`;
+    html += ` <button class="cruce-detail-btn" onclick="toggleCruceDetail('${detId}')">Ver detalle modelos</button>`;
+    html += `</div>`;
     html += `<div class="cruce-pills">`;
-    fam.problemas.forEach(([prob, cnt]) => {
-      const esBien = isSinDefecto({grupo: filteredData.find(r => r.familia === fam.nombre)?.grupo || '', problema: prob, familia: fam.nombre});
+    fam.problemas.forEach(([prob, records]) => {
+      const cnt = records.length;
+      const esBien = isSinDefecto({grupo: records[0]?.grupo || '', problema: prob, familia: fam.nombre});
       let pillClass = 'def';
-      if (esBien) {
-        pillClass = 'bien';
-      } else if (cnt >= 8) {
-        pillClass = 'def-high';
-      }
+      if (esBien) pillClass = 'bien';
+      else if (cnt >= 8) pillClass = 'def-high';
       const label = esBien ? prob + ' (BIEN)' : prob;
       html += `<div class="cruce-pill ${pillClass}">`;
       html += `<span class="pill-count">${cnt}</span>`;
       html += `<span class="pill-label">${label}</span>`;
       html += `</div>`;
     });
-    html += `</div></div>`;
+    html += `</div>`;
+
+    // Detail section (hidden by default)
+    html += `<div id="${detId}" class="cruce-detail" style="display:none;">`;
+
+    // Group by descripcion (model) for detail view
+    const modelMap = {};
+    familiaMap[fam.nombre].forEach(r => {
+      const desc = String(r.descripcion || '').trim();
+      const art = String(r.articulo || '').trim();
+      const key = desc || art || 'Sin especificar';
+      if (!modelMap[key]) modelMap[key] = {articulo: art, records: []};
+      modelMap[key].records.push(r);
+    });
+    const models = Object.entries(modelMap).sort((a,b) => b[1].records.length - a[1].records.length);
+
+    html += `<table class="cruce-detail-table">`;
+    html += `<thead><tr><th>Modelo / Descripción</th><th>Artículo</th><th>Cant.</th><th>Problemas</th><th>Notas</th></tr></thead><tbody>`;
+    models.forEach(([modelo, info]) => {
+      const probSummary = {};
+      const notasList = [];
+      info.records.forEach(r => {
+        probSummary[r.problema] = (probSummary[r.problema]||0) + 1;
+        const nota = String(r.notas || '').trim();
+        if (nota && nota !== 'None' && nota !== 'null' && !notasList.includes(nota)) notasList.push(nota);
+      });
+      const probText = Object.entries(probSummary).sort((a,b) => b[1]-a[1]).map(([p,c]) => c > 1 ? `${p} (${c})` : p).join(', ');
+      const notasText = notasList.slice(0,2).join(' | ');
+      html += `<tr>`;
+      html += `<td><strong>${modelo}</strong></td>`;
+      html += `<td style="font-size:10px;color:var(--muted);">${info.articulo || '-'}</td>`;
+      html += `<td style="text-align:center;font-weight:700;">${info.records.length}</td>`;
+      html += `<td style="font-size:10px;">${probText}</td>`;
+      html += `<td style="font-size:10px;color:#666;max-width:200px;">${notasText || '-'}</td>`;
+      html += `</tr>`;
+    });
+    html += `</tbody></table></div>`;
+
+    html += `</div>`;
   });
 
   if (html === '') {
@@ -1502,6 +1573,20 @@ function renderCruce() {
   }
 
   document.getElementById('cruceCards').innerHTML = html;
+}
+
+function toggleCruceDetail(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const btn = el.previousElementSibling?.previousElementSibling?.querySelector('.cruce-detail-btn') ||
+              el.parentElement.querySelector('.cruce-detail-btn');
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    if (btn) btn.textContent = 'Ocultar detalle';
+  } else {
+    el.style.display = 'none';
+    if (btn) btn.textContent = 'Ver detalle modelos';
+  }
 }
 
 // ==================== RENDER COMPARACION ====================
